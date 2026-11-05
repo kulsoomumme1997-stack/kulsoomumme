@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>A1 Täglich</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#1d4ed8">
 <style>
 :root{--bg:#f7f7f5;--card:#fff;--ink:#1a1a1a;--mute:#666;--acc:#1d4ed8;--ok:#15803d;--bad:#b91c1c;--line:#e5e5e0}
@@ -22,6 +24,7 @@ button.ok{border-color:var(--ok);color:var(--ok)}button.no{border-color:var(--ba
 textarea{width:100%;min-height:120px;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 .step{padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin:6px 0;display:flex;justify-content:space-between}
 .done{opacity:.55}
+.passage{white-space:pre-line;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0}
 </style>
 </head>
 <body><main id="app"></main>
@@ -43,10 +46,11 @@ function streak(){let n=0,d=dayNum();if(!S.days.includes(d))d--;while(S.days.inc
 // ---- today's plan ----
 let plan=null, cur=0, started=0;
 const BLOCKS=[
- {name:"Review words",min:7,run:reviewBlock},
- {name:"New words",min:5,run:newWordsBlock},
- {name:"Grammar",min:8,run:grammarBlock},
- {name:"Hören (listening)",min:5,run:listenBlock},
+ {name:"Review words",min:6,run:reviewBlock},
+ {name:"New words",min:4,run:newWordsBlock},
+ {name:"Grammar",min:6,run:grammarBlock},
+ {name:"Lesen (reading)",min:5,run:readBlock},
+ {name:"Hören (listening)",min:4,run:listenBlock},
  {name:"Schreiben / Sprechen",min:5,run:produceBlock}
 ];
 function home(){
@@ -95,7 +99,7 @@ function reviewBlock(el,next){
   })();
 }
 function newWordsBlock(el,next){
-  const fresh=[];for(let i=0;i<CONTENT.vocab.length&&fresh.length<5;i++)if(!S.cards[i])fresh.push(i);
+  const fresh=[];for(let i=0;i<CONTENT.vocab.length&&fresh.length<6;i++)if(!S.cards[i])fresh.push(i);
   if(!fresh.length){el.innerHTML=`<div class="card"><p>You've started every word. Add more to content.js!</p><button class="p" id="n">Next</button></div>`;$("#n").onclick=next;return}
   let i=0;(function show(){
     if(i>=fresh.length){save();return next()}
@@ -109,11 +113,11 @@ function newWordsBlock(el,next){
 }
 
 // ---- quiz helper ----
-function quiz(el,items,next,title){
+function quiz(el,items,next,title,passage){
   let i=0,score=0;(function show(){
     if(i>=items.length){el.innerHTML=`<div class="card"><h2>${score}/${items.length} correct</h2><p class="mute">${score===items.length?"Perfect.":"Re-read the explanation once, then move on."}</p><button class="p" id="n">Next</button></div>`;return void($("#n").onclick=next)}
     const [q,opts,ans,audio]=items[i];
-    el.innerHTML=`<div class="card"><div class="mute">${title} · ${i+1}/${items.length}</div>${audio?`<button id="pl">🔊 Play again</button>`:""}<p class="big" style="font-size:20px">${esc(q)}</p><div id="o"></div></div>`;
+    el.innerHTML=`<div class="card"><div class="mute">${title} · ${i+1}/${items.length}</div>${audio?`<button id="pl">🔊 Play again</button>`:""}${passage?`<div class="passage">${esc(passage)}</div>`:""}<p class="big" style="font-size:20px">${esc(q)}</p><div id="o"></div></div>`;
     if(audio){$("#pl").onclick=()=>say(audio);say(audio)}
     opts.forEach((o,j)=>{const b=document.createElement("button");b.className="opt";b.textContent=o;
       b.onclick=()=>{const bs=el.querySelectorAll(".opt");bs.forEach((x,k)=>{x.disabled=true;if(k===ans)x.classList.add("ok")});
@@ -126,6 +130,11 @@ function grammarBlock(el,next){
   const g=CONTENT.grammar[S.sessions%CONTENT.grammar.length];
   el.innerHTML=`<div class="card"><h2>${g.title}</h2><p>${g.text}</p><button class="p" id="go">Practise</button></div>`;
   $("#go").onclick=()=>quiz(el,g.q,next,g.title);
+}
+function readBlock(el,next){
+  const R=CONTENT.reading,t=R[S.sessions%R.length];
+  el.innerHTML=`<div class="card"><h2>Lesen: ${esc(t.title)}</h2><p class="mute">${t.type==="tf"?"Read the text. Mark each statement richtig or falsch.":"Read the texts. Choose the correct answer."} No dictionary: guess unknown words from context, as in the exam.</p><button class="p" id="go">Start</button></div>`;
+  $("#go").onclick=()=>quiz(el,t.qs,next,"Lesen",t.text);
 }
 function listenBlock(el,next){
   const L=CONTENT.listening,n=L.length,start=(S.sessions*3)%n;
