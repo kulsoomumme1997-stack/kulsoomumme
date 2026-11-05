@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A1 Täglich</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1d4ed8">
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--ink:#1a1a1a;--mute:#666;--acc:#1d4ed8;--ok:#15803d;--bad:#b91c1c;--line:#e5e5e0}
+@media (prefers-color-scheme:dark){:root{--bg:#111214;--card:#1b1d20;--ink:#eee;--mute:#999;--acc:#6ea0ff;--ok:#4ade80;--bad:#f87171;--line:#2c2f33}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,sans-serif}
+main{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:8px 0}h2{font-size:19px;margin:0 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:12px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.space{justify-content:space-between}
+button{font:inherit;padding:11px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button.p{background:var(--acc);color:#fff;border-color:var(--acc)}button.opt{display:block;width:100%;text-align:left;margin:6px 0}
+button.ok{border-color:var(--ok);color:var(--ok)}button.no{border-color:var(--bad);color:var(--bad)}
+.mute{color:var(--mute);font-size:15px}.big{font-size:30px;font-weight:600;margin:8px 0}
+.bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}
+textarea{width:100%;min-height:120px;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.step{padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin:6px 0;display:flex;justify-content:space-between}
+.done{opacity:.55}
+</style>
+</head>
+<body><main id="app"></main>
+<script src="content.js"></script>
+<script>
+const KEY="a1-taeglich-v1", $=s=>document.querySelector(s), app=$("#app");
+const dayNum=()=>{const d=new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)};
+const INTERVALS=[0,1,2,4,8,16,32]; // days per Leitner box
+let S=load();
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s)return s}catch(e){}
+  return {cards:{},seen:0,days:[],sessions:0,notes:{}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function say(t){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);u.lang="de-DE";u.rate=.85;
+  const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith("de"));if(v)u.voice=v;speechSynthesis.speak(u)}
+function streak(){let n=0,d=dayNum();if(!S.days.includes(d))d--;while(S.days.includes(d)){n++;d--}return n}
+
+// ---- today's plan ----
+let plan=null, cur=0, started=0;
+const BLOCKS=[
+ {name:"Review words",min:7,run:reviewBlock},
+ {name:"New words",min:5,run:newWordsBlock},
+ {name:"Grammar",min:8,run:grammarBlock},
+ {name:"Hören (listening)",min:5,run:listenBlock},
+ {name:"Schreiben / Sprechen",min:5,run:produceBlock}
+];
+function home(){
+  const done=S.days.includes(dayNum()), due=dueCards().length;
+  app.innerHTML=`<h1>A1 Täglich</h1>
+  <div class="card"><div class="row space"><div><b>${streak()}</b> day streak 🔥</div><div class="mute">${Object.keys(S.cards).length}/${CONTENT.vocab.length} words started · ${due} due</div></div>
+  <div class="bar" style="margin-top:10px"><i style="width:${Math.min(100,S.sessions/30*100)}%"></i></div><div class="mute">${S.sessions} of 30 sessions</div></div>
+  <div class="card"><h2>Today · 30 min</h2>${BLOCKS.map(b=>`<div class="step"><span>${b.name}</span><span class="mute">${b.min} min</span></div>`).join("")}
+  <p class="mute">${done?"✅ Already done today. Doing it again is fine, but sleep matters more than extra reps.":""}</p>
+  <button class="p" onclick="start()">${done?"Practise again":"Start today's session"}</button></div>
+  <div class="card"><b>Exam</b><p class="mute">${CONTENT.examInfo}</p></div>
+  <button onclick="if(confirm('Reset all progress?')){localStorage.removeItem('${KEY}');S=load();home()}" class="mute">Reset progress</button>`;
+}
+function start(){cur=0;started=Date.now();S._n={newWords:[]};runBlock()}
+function runBlock(){
+  if(cur>=BLOCKS.length)return finish();
+  const b=BLOCKS[cur];
+  app.innerHTML=`<div class="row space mute"><span>${cur+1}/${BLOCKS.length} · ${b.name} (~${b.min} min)</span><span id="clk"></span></div>
+  <div class="bar"><i style="width:${cur/BLOCKS.length*100}%"></i></div><div id="blk"></div>`;
+  tick();b.run($("#blk"),()=>{cur++;runBlock()});
+}
+function tick(){clearTimeout(tick.t);const c=$("#clk");if(!c)return;
+  const s=Math.floor((Date.now()-started)/1000);c.textContent=`⏱ ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;tick.t=setTimeout(tick,1000)}
+function finish(){
+  const d=dayNum();if(!S.days.includes(d)){S.days.push(d);S.sessions++}
+  S.seen=Object.keys(S.cards).length;delete S._n;save();clearTimeout(tick.t);
+  const m=Math.round((Date.now()-started)/60000);
+  app.innerHTML=`<div class="card"><h2>Fertig! 🎉</h2><p>${m} min today · ${streak()} day streak.</p>
+  <p class="mute">Tomorrow: your new words come back for review. That repetition is what makes them stick.</p><button class="p" onclick="home()">Home</button></div>`;
+}
+
+// ---- vocab / spaced repetition ----
+function dueCards(){const d=dayNum();return Object.entries(S.cards).filter(([k,c])=>c.due<=d).map(([k])=>+k)}
+function reviewBlock(el,next){
+  const q=dueCards().sort(()=>Math.random()-.5).slice(0,15);
+  if(!q.length){el.innerHTML=`<div class="card"><p>No words to review yet. Learn some new ones first.</p><button class="p" id="n">Next</button></div>`;$("#n").onclick=next;return}
+  let i=0;(function show(){
+    if(i>=q.length){save();return next()}
+    const w=CONTENT.vocab[q[i]];
+    el.innerHTML=`<div class="card"><div class="mute">${i+1}/${q.length} · What does this mean?</div><div class="big">${esc(w[0])}</div>
+    <button onclick="say(${JSON.stringify(w[0]).replace(/"/g,"&quot;")})">🔊</button><div id="a"></div><button class="p" id="r">Show answer</button></div>`;
+    $("#r").onclick=()=>{$("#a").innerHTML=`<p><b>${esc(w[1])}</b></p><p class="mute"><i>${esc(w[2])}</i></p>`;
+      $("#r").outerHTML=`<div class="row"><button id="no" class="no">Again</button><button id="yes" class="ok">Got it</button></div>`;
+      const grade=ok=>{const c=S.cards[q[i]];c.box=ok?Math.min(c.box+1,INTERVALS.length-1):0;c.due=dayNum()+Math.max(INTERVALS[c.box],ok?1:0);i++;show()};
+      $("#yes").onclick=()=>grade(true);$("#no").onclick=()=>grade(false)};
+  })();
+}
+function newWordsBlock(el,next){
+  const fresh=[];for(let i=0;i<CONTENT.vocab.length&&fresh.length<5;i++)if(!S.cards[i])fresh.push(i);
+  if(!fresh.length){el.innerHTML=`<div class="card"><p>You've started every word. Add more to content.js!</p><button class="p" id="n">Next</button></div>`;$("#n").onclick=next;return}
+  let i=0;(function show(){
+    if(i>=fresh.length){save();return next()}
+    const w=CONTENT.vocab[fresh[i]];
+    el.innerHTML=`<div class="card"><div class="mute">New word ${i+1}/${fresh.length}</div><div class="big">${esc(w[0])}</div><p><b>${esc(w[1])}</b></p>
+    <p class="mute"><i>${esc(w[2])}</i></p><div class="row"><button id="s">🔊 Word</button><button id="s2">🔊 Sentence</button></div>
+    <p class="mute">Say it aloud 3 times before continuing.</p><button class="p" id="k">Next</button></div>`;
+    $("#s").onclick=()=>say(w[0]);$("#s2").onclick=()=>say(w[2]);
+    $("#k").onclick=()=>{S.cards[fresh[i]]={box:1,due:dayNum()+1};i++;show()};
+  })();
+}
+
+// ---- quiz helper ----
+function quiz(el,items,next,title){
+  let i=0,score=0;(function show(){
+    if(i>=items.length){el.innerHTML=`<div class="card"><h2>${score}/${items.length} correct</h2><p class="mute">${score===items.length?"Perfect.":"Re-read the explanation once, then move on."}</p><button class="p" id="n">Next</button></div>`;return void($("#n").onclick=next)}
+    const [q,opts,ans,audio]=items[i];
+    el.innerHTML=`<div class="card"><div class="mute">${title} · ${i+1}/${items.length}</div>${audio?`<button id="pl">🔊 Play again</button>`:""}<p class="big" style="font-size:20px">${esc(q)}</p><div id="o"></div></div>`;
+    if(audio){$("#pl").onclick=()=>say(audio);say(audio)}
+    opts.forEach((o,j)=>{const b=document.createElement("button");b.className="opt";b.textContent=o;
+      b.onclick=()=>{const bs=el.querySelectorAll(".opt");bs.forEach((x,k)=>{x.disabled=true;if(k===ans)x.classList.add("ok")});
+        if(j===ans)score++;else b.classList.add("no");
+        const n=document.createElement("button");n.className="p";n.textContent="Continue";n.onclick=()=>{i++;show()};$("#o").append(n)};
+      $("#o").append(b)});
+  })();
+}
+function grammarBlock(el,next){
+  const g=CONTENT.grammar[S.sessions%CONTENT.grammar.length];
+  el.innerHTML=`<div class="card"><h2>${g.title}</h2><p>${g.text}</p><button class="p" id="go">Practise</button></div>`;
+  $("#go").onclick=()=>quiz(el,g.q,next,g.title);
+}
+function listenBlock(el,next){
+  const L=CONTENT.listening,n=L.length,start=(S.sessions*3)%n;
+  const items=[0,1,2].map(k=>L[(start+k)%n]).map(([t,q,o,a])=>[q,o,a,t]);
+  el.innerHTML=`<div class="card"><h2>Hören</h2><p class="mute">Listen first, then answer. In the real exam you hear each text twice. If you hear nothing, your device has no German voice — turn on sound / install a German voice.</p><button class="p" id="go">Start</button></div>`;
+  $("#go").onclick=()=>quiz(el,items,next,"Hören");
+}
+function produceBlock(el,next){
+  const writing=S.sessions%2===0, list=writing?CONTENT.writing:CONTENT.speaking;
+  const p=list[Math.floor(S.sessions/2)%list.length];
+  el.innerHTML=`<div class="card"><h2>${writing?"Schreiben ✍️":"Sprechen 🗣️"}</h2><p>${esc(p)}</p>
+  ${writing?`<textarea id="t" placeholder="Schreib hier…"></textarea><p class="mute">Check: greeting? sentences start with a capital letter? nouns capitalised? verb in position 2? closing (Viele Grüße)?</p>`
+  :`<p class="mute">Say it aloud, standing up if you can. Then once more, faster. Check: complete sentences? verb in position 2? No English words?</p>`}
+  <button class="p" id="d">Done</button></div>`;
+  $("#d").onclick=()=>{if(writing){const v=$("#t").value.trim();if(v){S.notes[dayNum()]=v;save()}}next()};
+}
+if("speechSynthesis" in window)speechSynthesis.getVoices();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+home();
+</script>
+</body>
+</html>
