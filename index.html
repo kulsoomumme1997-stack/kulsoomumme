@@ -149,8 +149,10 @@ function quiz(el,items,next,title,passage){
     const [q,opts,ans,audio]=items[i];
     el.innerHTML=`<div class="card"><div class="mute">${title} · ${i+1}/${items.length}</div>${audio?`<button id="pl">🔊 Play again</button>`:""}${passage?`<div class="passage">${esc(passage)}</div>`:""}<p class="big" style="font-size:20px">${esc(q)}</p><div id="o"></div></div>`;
     if(audio){$("#pl").onclick=()=>say(audio);say(audio)}
-    opts.forEach((o,j)=>{const b=document.createElement("button");b.className="opt";b.textContent=o;
-      b.onclick=()=>{const bs=el.querySelectorAll(".opt");bs.forEach((x,k)=>{x.disabled=true;if(k===ans)x.classList.add("ok")});
+    const fixed=opts[0]==="Richtig"||opts[0]==="A"||opts.length<3&&opts.every(x=>x.length<3);
+    const order=opts.map((_,j)=>j);if(!fixed)order.sort(()=>Math.random()-.5);
+    order.forEach(j=>{const o=opts[j],b=document.createElement("button");b.className="opt";b.textContent=o;b.dataset.j=j;
+      b.onclick=()=>{const bs=el.querySelectorAll(".opt");bs.forEach(x=>{x.disabled=true;if(+x.dataset.j===ans)x.classList.add("ok")});
         if(j===ans)score++;else b.classList.add("no");
         const n=document.createElement("button");n.className="p";n.textContent="Continue";n.onclick=()=>{i++;show()};$("#o").append(n)};
       $("#o").append(b)});
