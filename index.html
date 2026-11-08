@@ -62,12 +62,13 @@ function importData(f){
 // ---- today's plan ----
 let plan=null, cur=0, started=0;
 const BLOCKS=[
- {name:"Review words",min:6,run:reviewBlock},
+ {name:"Review words",min:5,run:reviewBlock},
  {name:"New words",min:4,run:newWordsBlock},
- {name:"Grammar",min:6,run:grammarBlock},
- {name:"Lesen (reading)",min:5,run:readBlock},
- {name:"Hören (listening)",min:4,run:listenBlock},
- {name:"Schreiben / Sprechen",min:5,run:produceBlock}
+ {name:"Grammar",min:5,run:grammarBlock},
+ {name:"Lesen (reading)",min:4,run:readBlock},
+ {name:"Hören (listening)",min:3,run:listenBlock},
+ {name:"Alltag (daily life)",min:5,run:alltagBlock},
+ {name:"Schreiben / Sprechen",min:4,run:produceBlock}
 ];
 function home(){
   const done=S.days.includes(dayNum()), due=dueCards().length;
@@ -77,6 +78,8 @@ function home(){
   <div class="card"><h2>Today · 30 min</h2>${BLOCKS.map(b=>`<div class="step"><span>${b.name}</span><span class="mute">${b.min} min</span></div>`).join("")}
   <p class="mute">${done?"✅ Already done today. Doing it again is fine, but sleep matters more than extra reps.":""}</p>
   <button class="p" onclick="start()">${done?"Practise again":"Start today's session"}</button></div>
+  <div class="card"><b>Extra practice</b><p class="mute">Optional drills, any time. They use words you have already met.</p>
+  <div class="row"><button onclick="extra('write')">Write the word</button><button onclick="extra('hear')">Listen &amp; type</button><button onclick="extra('artikel')">der / die / das</button><button onclick="extra('szene')">Daily scenes</button></div></div>
   <div class="card"><b>Exam</b><p class="mute">${CONTENT.examInfo}</p></div>
   <div class="card"><b>Backup</b><p class="mute">Your progress lives only on this device. Save a backup file now and then, and import it on a new phone.</p>
   <div class="row"><button onclick="exportData()">Export backup</button><button onclick="document.getElementById('imp').click()">Import backup</button>
@@ -118,12 +121,15 @@ function reviewBlock(el,next){
   })();
 }
 function newWordsBlock(el,next){
-  const fresh=[];for(let i=0;i<CONTENT.vocab.length&&fresh.length<6;i++)if(!S.cards[i])fresh.push(i);
+  const t=theme(),fresh=[],V=CONTENT.vocab;
+  V.forEach((w,i)=>{if(fresh.length<4&&!S.cards[i]&&w[3]===t.id)fresh.push(i)});
+  V.forEach((w,i)=>{if(fresh.length<6&&!S.cards[i]&&!w[3])fresh.push(i)});
+  V.forEach((w,i)=>{if(fresh.length<6&&!S.cards[i]&&!fresh.includes(i))fresh.push(i)});
   if(!fresh.length){el.innerHTML=`<div class="card"><p>You've started every word. Add more to content.js!</p><button class="p" id="n">Next</button></div>`;$("#n").onclick=next;return}
   let i=0;(function show(){
     if(i>=fresh.length){save();return next()}
     const w=CONTENT.vocab[fresh[i]];
-    el.innerHTML=`<div class="card"><div class="mute">New word ${i+1}/${fresh.length}</div><div class="big">${esc(w[0])}</div><p><b>${esc(w[1])}</b></p>
+    el.innerHTML=`<div class="card"><div class="mute">New word ${i+1}/${fresh.length}${w[3]?" · "+esc(THEMES.find(x=>x.id===w[3]).name):""}</div><div class="big">${esc(w[0])}</div><p><b>${esc(w[1])}</b></p>
     <p class="mute"><i>${esc(w[2])}</i></p><div class="row"><button id="s">🔊 Word</button><button id="s2">🔊 Sentence</button></div>
     <p class="mute">Say it aloud 3 times before continuing.</p><button class="p" id="k">Next</button></div>`;
     $("#s").onclick=()=>say(w[0]);$("#s2").onclick=()=>say(w[2]);
@@ -160,6 +166,58 @@ function listenBlock(el,next){
   const items=[0,1,2].map(k=>L[(start+k)%n]).map(([t,q,o,a])=>[q,o,a,t]);
   el.innerHTML=`<div class="card"><h2>Hören</h2><p class="mute">Listen first, then answer. In the real exam you hear each text twice. If you hear nothing, your device has no German voice — turn on sound / install a German voice.</p><button class="p" id="go">Start</button></div>`;
   $("#go").onclick=()=>quiz(el,items,next,"Hören");
+}
+// ---- daily-life exercises ----
+const THEMES=CONTENT.themes, theme=()=>THEMES[S.sessions%THEMES.length];
+const shuffle=a=>a.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+const norm=t=>t.toLowerCase().trim().replace(/[.!?,;]+$/,"").replace(/\s+/g," ").replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss");
+function pickIdx(n,tid){
+  const V=CONTENT.vocab,seen=Object.keys(S.cards).map(Number);
+  let a=tid?shuffle(seen.filter(i=>V[i][3]===tid)).slice(0,n):[];
+  if(a.length<n)a=a.concat(shuffle(seen.filter(i=>!a.includes(i))).slice(0,n-a.length));
+  if(a.length<n)a=a.concat(shuffle(V.map((_,i)=>i).filter(i=>!a.includes(i))).slice(0,n-a.length));
+  return a;
+}
+function articleItems(n){
+  const V=CONTENT.vocab,isN=i=>/^(der|die|das) /.test(V[i][0]),seen=Object.keys(S.cards).map(Number).filter(isN);
+  let a=shuffle(seen).slice(0,n);
+  if(a.length<n)a=a.concat(shuffle(V.map((_,i)=>i).filter(i=>isN(i)&&!a.includes(i))).slice(0,n-a.length));
+  return a.map(i=>{const [art,...rest]=V[i][0].split(" ");return [`___ ${rest.join(" ")}  (${V[i][1]})`,["der","die","das"],["der","die","das"].indexOf(art)]});
+}
+function sceneItems(d){return d.steps.map(([q,o])=>{const s=shuffle(o.map((t,j)=>[t,j===0]));return [q,s.map(x=>x[0]),s.findIndex(x=>x[1]),q]})}
+function typeEx(el,idxs,next,title,hear){
+  let i=0,score=0;(function show(){
+    if(i>=idxs.length){el.innerHTML=`<div class="card"><h2>${score}/${idxs.length} correct</h2><p class="mute">${score===idxs.length?"Perfekt.":"Wrong words come back sooner in your reviews."}</p><button class="p" id="n">Next</button></div>`;return void($("#n").onclick=next)}
+    const w=CONTENT.vocab[idxs[i]];
+    el.innerHTML=`<div class="card"><div class="mute">${title} · ${i+1}/${idxs.length}</div>
+    <p class="mute">${hear?"Listen and type what you hear (with der/die/das for nouns).":"Write it in German (with der/die/das for nouns)."}</p>
+    ${hear?`<button id="pl">🔊 Play again</button>`:`<div class="big">${esc(w[1])}</div>`}
+    <input id="ti" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;font:inherit;padding:10px;margin:10px 0;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">
+    <div class="row">${["ä","ö","ü","ß"].map(c=>`<button type="button" class="um">${c}</button>`).join("")}</div><div id="fb" style="margin:10px 0"></div><button class="p" id="ck">Check</button></div>`;
+    const inp=$("#ti");inp.focus();
+    if(hear){$("#pl").onclick=()=>say(w[0]);say(w[0])}
+    el.querySelectorAll(".um").forEach(b=>b.onclick=()=>{const a=inp.selectionStart||inp.value.length;inp.value=inp.value.slice(0,a)+b.textContent+inp.value.slice(a);inp.focus();inp.setSelectionRange(a+1,a+1)});
+    let checked=false;const go=()=>{
+      if(checked){i++;return show()}checked=true;
+      const ok=norm(inp.value)===norm(w[0]);if(ok)score++;
+      const c=S.cards[idxs[i]];if(c&&!ok){c.box=0;c.due=dayNum()+1;save()}
+      $("#fb").innerHTML=ok?`<b style="color:var(--ok)">Richtig!</b> <span class="mute"><i>${esc(w[2])}</i></span>`:`<b style="color:var(--bad)">Not quite.</b> Correct: <b>${esc(w[0])}</b> <span class="mute"><i>${esc(w[2])}</i></span>`;
+      $("#ck").textContent="Continue";if(!hear)say(w[0]);
+    };
+    $("#ck").onclick=go;inp.onkeydown=e=>{if(e.key==="Enter")go()};
+  })();
+}
+function alltagBlock(el,next){
+  const t=theme(),d=CONTENT.dialogues.find(x=>x.theme===t.id);
+  el.innerHTML=`<div class="card"><h2>Alltag: ${esc(t.name)}</h2><p class="mute">Today's real-life situation. You will write words, check articles, then answer in a short scene: ${esc(d.scene)}.</p><button class="p" id="go">Start</button></div>`;
+  $("#go").onclick=()=>typeEx(el,pickIdx(5,t.id),()=>quiz(el,articleItems(4),()=>quiz(el,sceneItems(d),next,"Szene: "+d.scene),"Artikel"),"Wörter schreiben");
+}
+function extra(kind){
+  app.innerHTML=`<div class="row space"><button onclick="home()">← Home</button></div><div id="blk"></div>`;const el=$("#blk"),back=home;
+  if(kind==="write")typeEx(el,pickIdx(10),back,"Wörter schreiben");
+  else if(kind==="hear")typeEx(el,pickIdx(8),back,"Hören & schreiben",true);
+  else if(kind==="artikel")quiz(el,articleItems(10),back,"Artikel");
+  else{const d=shuffle(CONTENT.dialogues)[0];quiz(el,sceneItems(d),back,"Szene: "+d.scene)}
 }
 function produceBlock(el,next){
   const writing=S.sessions%2===0, list=writing?CONTENT.writing:CONTENT.speaking;
