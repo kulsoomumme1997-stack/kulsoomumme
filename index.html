@@ -24,6 +24,8 @@ button.ok{border-color:var(--ok);color:var(--ok)}button.no{border-color:var(--ba
 textarea{width:100%;min-height:120px;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 .step{padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin:6px 0;display:flex;justify-content:space-between}
 .done{opacity:.55}
+.en{display:none;color:var(--mute);font-size:15px;margin:6px 0}.showen .en{display:block}
+.chip{margin:4px 4px 4px 0}.bubble{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:8px 0}.ans{min-height:48px;border:1px dashed var(--line);border-radius:10px;padding:6px;margin:8px 0}
 .passage{white-space:pre-line;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0}
 </style>
 </head>
@@ -78,9 +80,12 @@ function home(){
   <div class="card"><h2>Today · 30 min</h2>${BLOCKS.map(b=>`<div class="step"><span>${b.name}</span><span class="mute">${b.min} min</span></div>`).join("")}
   <p class="mute">${done?"✅ Already done today. Doing it again is fine, but sleep matters more than extra reps.":""}</p>
   <button class="p" onclick="start()">${done?"Practise again":"Start today's session"}</button></div>
+  <div class="card"><div class="row space"><b>Lektion 01 · ${CONTENT.lessons[0].title}</b><span class="mute">~${CONTENT.lessons[0].minutes} min</span></div>
+  <p class="mute">${S.lessons&&S.lessons["01"]?"Best score: "+S.lessons["01"].best+"%":"A complete guided lesson: words, grammar, listening, exercises, speaking and a test."}</p><button class="p" onclick="startLesson('01')">${S.lessons&&S.lessons["01"]?"Repeat lesson":"Start lesson"}</button></div>
   <div class="card"><b>Extra practice</b><p class="mute">Optional drills, any time. They use words you have already met.</p>
   <div class="row"><button onclick="extra('write')">Write the word</button><button onclick="extra('hear')">Listen &amp; type</button><button onclick="extra('artikel')">der / die / das</button><button onclick="extra('szene')">Daily scenes</button></div></div>
   <div class="card"><b>Exam</b><p class="mute">${CONTENT.examInfo}</p></div>
+  <div class="card"><b>Mistake bank</b><p class="mute">${(S.mistakes||[]).length} saved mistakes from lessons.</p><button onclick="showMistakes()">Review mistakes</button></div>
   <div class="card"><b>Backup</b><p class="mute">Your progress lives only on this device. Save a backup file now and then, and import it on a new phone.</p>
   <div class="row"><button onclick="exportData()">Export backup</button><button onclick="document.getElementById('imp').click()">Import backup</button>
   <input id="imp" type="file" accept="application/json,.json" hidden onchange="importData(this.files[0])"></div><p id="bmsg" class="mute"></p></div>
@@ -227,6 +232,147 @@ function produceBlock(el,next){
   :`<p class="mute">Say it aloud, standing up if you can. Then once more, faster. Check: complete sentences? verb in position 2? No English words?</p>`}
   <button class="p" id="d">Done</button></div>`;
   $("#d").onclick=()=>{if(writing){const v=$("#t").value.trim();if(v){S.notes[dayNum()]=v;save()}}next()};
+}
+// ---- guided lessons ----
+let LR=null;
+function rec(tag,ok,q,given,correct){
+  LR.log.push({tag,ok,q,given,correct});
+  if(!ok){S.mistakes=S.mistakes||[];S.mistakes.unshift({q,correct,tag,date:dayNum()});S.mistakes=S.mistakes.slice(0,60);save()}
+}
+function sayAll(lines){
+  if(!("speechSynthesis" in window))return;speechSynthesis.cancel();
+  const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith("de"));
+  lines.forEach(([who,t])=>{const u=new SpeechSynthesisUtterance(t);u.lang="de-DE";u.rate=.85;u.pitch=who===0?1.25:.8;if(v)u.voice=v;speechSynthesis.speak(u)});
+}
+function showMistakes(){
+  const m=S.mistakes||[];
+  app.innerHTML=`<div class="row space"><button onclick="home()">← Home</button>${m.length?`<button onclick="S.mistakes=[];save();showMistakes()">Clear all</button>`:""}</div><h1>Mistake bank</h1>
+  ${m.length?m.map(x=>`<div class="card"><div class="mute">${esc(x.q)}</div><div>Richtig: <b>${esc(x.correct)}</b></div></div>`).join(""):`<div class="card"><p class="mute">No mistakes saved yet. Finish a lesson to fill this list.</p></div>`}`;
+}
+function startLesson(id){
+  const L=CONTENT.lessons.find(l=>l.id===id);LR={L,log:[],test:[]};
+  const steps=[["Lernziel",lsIntro],["Wortschatz",lsVocab],["Grammatik",lsGrammar],["Hören",lsListen],["Üben",lsPractice],["Sprechen",lsSpeak],["Mini-Test",lsTest],["Feedback",lsFeedback]];
+  let k=0;
+  app.className="";
+  app.innerHTML=`<div class="row space"><button onclick="home()">← Home</button><button id="enb">English</button></div>
+  <div class="row space mute" style="margin-top:10px"><span id="lbl"></span></div><div class="bar"><i id="lb" style="width:0"></i></div><div id="blk"></div>`;
+  $("#enb").onclick=()=>app.classList.toggle("showen");
+  const run=()=>{if(k>=steps.length)return;$("#lb").style.width=k/steps.length*100+"%";$("#lbl").textContent=`Schritt ${k+1}/${steps.length} · ${steps[k][0]}`;window.scrollTo(0,0);steps[k++][1]($("#blk"),run)};
+  run();
+}
+function lsIntro(el,next){
+  const L=LR.L;
+  el.innerHTML=`<div class="card"><h2>Lektion ${L.id}: ${esc(L.title)}</h2><p><b>Lernziel:</b> ${esc(L.goal)}</p><div class="en">${esc(L.goalEn)}</div>
+  <p class="mute">${L.minutes} Minuten · 10 Wörter · 3 Grammatikpunkte · Hören · 5 Übungen · Sprechen · Mini-Test</p><button class="p" id="go">Los geht's</button></div>`;
+  $("#go").onclick=next;
+}
+function lsVocab(el,next){
+  const L=LR.L;
+  el.innerHTML=`<div class="card"><h2>Neue Wörter</h2><p class="mute">Höre jedes Wort und sprich es laut nach.</p>
+  ${L.vocab.map((w,i)=>`<div class="row space" style="padding:8px 0;border-top:1px solid var(--line)"><div><b>${esc(w[0])}</b>${w[1]?` <span class="mute">(${esc(w[1])})</span>`:""}<div class="mute">${esc(w[2])} · <i>${esc(w[3])}</i></div></div><button data-i="${i}" class="sp">🔊</button></div>`).join("")}
+  <button class="p" id="go" style="margin-top:12px">Weiter</button></div>`;
+  el.querySelectorAll(".sp").forEach(b=>b.onclick=()=>{const w=L.vocab[b.dataset.i];say(w[0]+". "+w[3])});
+  $("#go").onclick=()=>{
+    L.vocab.forEach(w=>{const i=CONTENT.vocab.findIndex(v=>v[0]===w[0]);if(i>=0&&!S.cards[i])S.cards[i]={box:1,due:dayNum()+1}});save();next()};
+}
+function lsGrammar(el,next){
+  const G=LR.L.grammar;let i=0;
+  (function show(){
+    if(i>=G.length)return next();
+    const g=G[i];
+    el.innerHTML=`<div class="card"><div class="mute">Grammatik ${i+1}/${G.length}</div><h2>${esc(g.title)}</h2><p>${g.de}</p><div class="en">${esc(g.en)}</div><button class="p" id="go">Weiter</button></div>`;
+    $("#go").onclick=()=>{i++;show()};
+  })();
+}
+function lsListen(el,next){
+  const Q=LR.L.listening;
+  el.innerHTML=`<div class="card"><h2>Hören</h2><p>Höre das Gespräch von ${esc(Q.names[0])} und ${esc(Q.names[1])}.</p><div class="row"><button id="pl" class="p">🔊 Gespräch abspielen</button><button id="tx">Text zeigen</button></div><div id="tr" class="bubble" hidden>${Q.lines.map(l=>`<div><b>${esc(Q.names[l[0]])}:</b> ${esc(l[1])}</div>`).join("")}</div>
+  <p class="mute">Höre es zuerst, ohne den Text. Dann beantworte die Fragen.</p><button class="p" id="go">Zu den Fragen</button></div>`;
+  $("#pl").onclick=()=>sayAll(Q.lines);$("#tx").onclick=()=>{$("#tr").hidden=!$("#tr").hidden};
+  $("#go").onclick=()=>runItems(el,Q.qs,next,"Hören");
+}
+function lsPractice(el,next){runItems(el,LR.L.exercises,next,"Üben")}
+function lsTest(el,next){
+  el.innerHTML=`<div class="card"><h2>Mini-Test</h2><p>5 Fragen. Du siehst die Lösungen erst am Ende.</p><button class="p" id="go">Start</button></div>`;
+  $("#go").onclick=()=>runItems(el,LR.L.test,next,"Mini-Test",true);
+}
+function runItems(el,items,done,title,quiet){
+  let i=0;
+  (function show(){
+    if(i>=items.length)return done();
+    const it=items[i],adv=()=>{i++;show()};
+    el.innerHTML=`<div class="card"><div class="mute">${title} · ${i+1}/${items.length}</div><p class="big" style="font-size:20px">${esc(it.q)}</p>${it.en?`<div class="en">${esc(it.en)}</div>`:""}<div id="ex"></div><div id="fb" style="margin:10px 0"></div><div id="act"></div></div>`;
+    const ex=$("#ex"),fb=$("#fb"),act=$("#act");
+    const finish=(ok,given,correct)=>{
+      rec(it.tag,ok,it.q+(it.words?" ("+it.words.join(" ")+")":""),given,correct);if(quiet&&title==="Mini-Test")LR.test.push(ok);
+      fb.innerHTML=quiet?"":ok?`<b style="color:var(--ok)">Richtig!</b>`:`<b style="color:var(--bad)">Nicht ganz.</b> Richtig: <b>${esc(correct)}</b>`;
+      act.innerHTML=`<button class="p" id="nx">Weiter</button>`;$("#nx").onclick=adv;
+    };
+    if(it.t==="mcq"||it.t==="listen"){
+      if(it.t==="listen"){ex.innerHTML=`<button id="pl">🔊 Abspielen</button>`;$("#pl").onclick=()=>say(it.say);say(it.say)}
+      const o=shuffle(it.opts.map((t,j)=>[t,j===it.a]));
+      const box=document.createElement("div");ex.append(box);
+      o.forEach(([t,c])=>{const b=document.createElement("button");b.className="opt";b.textContent=t;b.dataset.c=c?"1":"";
+        b.onclick=()=>{box.querySelectorAll(".opt").forEach(x=>{x.disabled=true;if(!quiet&&x.dataset.c)x.classList.add("ok")});if(!quiet&&!c)b.classList.add("no");finish(c,t,it.opts[it.a])};
+        box.append(b)});
+    }else if(it.t==="build"){
+      let bank=shuffle(it.words.map((w,j)=>({w,j}))),chosen=[];
+      const draw=()=>{
+        ex.innerHTML=`<div class="ans">${chosen.map(c=>`<button class="chip" data-j="${c.j}" data-s="c">${esc(c.w)}</button>`).join("")}</div><div>${bank.map(c=>`<button class="chip" data-j="${c.j}" data-s="b">${esc(c.w)}</button>`).join("")}</div>`;
+        ex.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{const j=+b.dataset.j;
+          if(b.dataset.s==="b"){const c=bank.find(x=>x.j===j);bank=bank.filter(x=>x.j!==j);chosen.push(c)}else{const c=chosen.find(x=>x.j===j);chosen=chosen.filter(x=>x.j!==j);bank.push(c)}draw()});
+      };
+      draw();act.innerHTML=`<button class="p" id="ck">Prüfen</button>`;
+      $("#ck").onclick=()=>{if(chosen.length<it.words.length)return;const g=chosen.map(c=>c.w).join(" "),c=it.words.join(" ");ex.querySelectorAll(".chip").forEach(b=>b.disabled=true);finish(g===c,g,c+(it.q.includes("Frage")?"?":"."))};
+    }else if(it.t==="type"){
+      ex.innerHTML=`<input id="ti" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">`;
+      const inp=$("#ti");inp.focus();act.innerHTML=`<button class="p" id="ck">Prüfen</button>`;
+      const go=()=>{if(!inp.value.trim())return;inp.disabled=true;const ok=it.a.some(a=>norm(a)===norm(inp.value));finish(ok,inp.value.trim(),it.a[0])};
+      $("#ck").onclick=go;inp.onkeydown=e=>{if(e.key==="Enter")go()};
+    }
+  })();
+}
+function lsSpeak(el,next){
+  const SP=LR.L.speaking,SR=window.SpeechRecognition||window.webkitSpeechRecognition;let i=0;
+  (function show(){
+    if(i>=SP.steps.length)return next();
+    const st=SP.steps[i];let tried=false;
+    el.innerHTML=`<div class="card"><div class="mute">Sprechen ${i+1}/${SP.steps.length} · ${esc(SP.scene)}</div>
+    <div class="bubble"><b>Lena:</b> ${esc(st.q)} <button id="rp">🔊</button></div>
+    <p class="mute">Antworte mit einem ganzen Satz${SR?" (Mikrofon oder Tastatur)":""}.</p>
+    <input id="ti" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">
+    <div class="row" style="margin:10px 0">${SR?`<button id="mic">🎤 Sprechen</button>`:""}<button class="p" id="sd">Senden</button></div><div id="fb"></div></div>`;
+    say(st.q);$("#rp").onclick=()=>say(st.q);
+    if(SR)$("#mic").onclick=()=>{const bad=()=>{$("#fb").innerHTML=`<span class="mute">Mikrofon nicht verfügbar. Bitte tippe deine Antwort.</span>`};try{const r=new SR();r.lang="de-DE";r.interimResults=false;r.onresult=e=>{$("#ti").value=e.results[0][0].transcript};r.onerror=bad;r.start()}catch(e){bad()}};
+    const send=()=>{
+      const v=$("#ti").value.trim();if(!v)return;
+      const ok=new RegExp(st.re).test(norm(v));
+      if(!tried){rec(st.tag,ok,"Sprechen: "+st.q,v,st.model);tried=true}
+      if(ok){$("#fb").innerHTML=`<b style="color:var(--ok)">Super!</b> ${esc(v)}<br><button class="p" id="nx" style="margin-top:8px">Weiter</button>`;$("#nx").onclick=()=>{i++;show()}}
+      else{$("#fb").innerHTML=`<b style="color:var(--bad)">Fast.</b> ${esc(st.tip)}<br>Beispiel: <b>${esc(st.model)}</b> <button id="ms">🔊</button><div class="row" style="margin-top:8px"><button id="rt">Nochmal versuchen</button><button id="nx">Weiter</button></div>`;
+        $("#ms").onclick=()=>say(st.model);$("#rt").onclick=()=>{$("#ti").value="";$("#ti").focus();$("#fb").innerHTML=""};$("#nx").onclick=()=>{i++;show()}}
+    };
+    $("#sd").onclick=send;$("#ti").onkeydown=e=>{if(e.key==="Enter")send()};
+  })();
+}
+function lsFeedback(el){
+  const L=LR.L,log=LR.log,tags={};
+  log.forEach(x=>{(tags[x.tag]=tags[x.tag]||{n:0,ok:0});tags[x.tag].n++;if(x.ok)tags[x.tag].ok++});
+  const total=log.length,right=log.filter(x=>x.ok).length,pct=Math.round(right/total*100);
+  const tn=LR.test.length,tr=LR.test.filter(Boolean).length,pass=tr>=4&&pct>=70;
+  const arr=Object.entries(tags).map(([t,v])=>({t,p:Math.round(v.ok/v.n*100),...v})).sort((a,b)=>a.p-b.p);
+  const weak=arr.filter(x=>x.p<80),strong=arr.filter(x=>x.p>=80);
+  S.lessons=S.lessons||{};const prev=S.lessons[L.id];
+  S.lessons[L.id]={best:Math.max(pct,prev?prev.best:0),last:pct,date:dayNum()};save();
+  const miss=log.filter(x=>!x.ok);
+  el.innerHTML=`<div class="card"><h2>${pass?"Bestanden! 🎉":"Noch nicht ganz."}</h2><p>Mini-Test: <b>${tr}/${tn}</b> · Gesamt: <b>${pct}%</b>${prev?` <span class="mute">(vorher: ${prev.last}%)</span>`:""}</p>
+  <p class="mute">${pass?"Du kannst dich vorstellen. Wiederhole die Wörter morgen im Review.":"Wiederhole die Lektion morgen. Ziel: mindestens 4/5 im Test."}</p></div>
+  <div class="card"><h2>Dein Feedback</h2>
+  ${arr.map(x=>`<div style="margin:8px 0"><div class="row space"><span>${esc(L.tagInfo[x.t].name)}</span><span class="mute">${x.ok}/${x.n}</span></div><div class="bar"><i style="width:${x.p}%"></i></div></div>`).join("")}
+  ${strong.length?`<p><b>Stark:</b> ${strong.map(x=>esc(L.tagInfo[x.t].name)).join(", ")}.</p>`:""}
+  ${weak.length?`<p><b>Üben:</b></p>${weak.map(x=>`<p>• <b>${esc(L.tagInfo[x.t].name)}:</b> ${esc(L.tagInfo[x.t].tip)}</p>`).join("")}`:`<p>Keine Schwächen gefunden. Weiter so!</p>`}</div>
+  ${miss.length?`<div class="card"><h2>Deine Fehler</h2>${miss.map(x=>`<p class="mute">${esc(x.q)}<br>Du: ${esc(x.given)} → Richtig: <b>${esc(x.correct)}</b></p>`).join("")}<p class="mute">Gespeichert in der Fehlerbank.</p></div>`:""}
+  <div class="row"><button class="p" onclick="home()">Fertig</button><button onclick="startLesson('${L.id}')">Lektion wiederholen</button></div>`;
 }
 if("speechSynthesis" in window)speechSynthesis.getVoices();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});

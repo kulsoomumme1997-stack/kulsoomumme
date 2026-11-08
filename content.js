@@ -484,5 +484,73 @@ const CONTENT = {
     "Teil 1 – Say your whole day: „Ich stehe um … Uhr auf. Ich frühstücke … Dann gehe ich …“ (8 sentences)"
   ],
 
+  // Full guided lessons. Instructions are German-first; "en" fields are shown only when the learner taps "English".
+  lessons: [{
+    id: "01", title: "Sich vorstellen", minutes: 12,
+    goal: "Du kannst dich vorstellen und einfache Fragen beantworten.",
+    goalEn: "You can introduce yourself and answer simple questions.",
+    vocab: [
+      ["der Name","die Namen","name","Mein Name ist Anna."],
+      ["heißen","","to be called","Ich heiße Anna."],
+      ["kommen","","to come","Ich komme aus Pakistan."],
+      ["wohnen","","to live","Ich wohne in Berlin."],
+      ["das Land","die Länder","country","Mein Land ist Pakistan."],
+      ["die Stadt","die Städte","city","Berlin ist eine Stadt."],
+      ["die Sprache","die Sprachen","language","Ich spreche zwei Sprachen."],
+      ["der Beruf","die Berufe","job","Mein Beruf ist Lehrerin."],
+      ["das Jahr","die Jahre","year","Ich bin 25 Jahre alt."],
+      ["der Student","die Studenten","student (male)","Tom ist Student."]
+    ],
+    grammar: [
+      { title: "Das Verb steht auf Position 2",
+        de: "ich heiße · du heißt · er/sie heißt<br>ich komme · du kommst · er/sie kommt<br>ich wohne · du wohnst · er/sie wohnt<br><i>Ich heiße Anna. Wie heißt du?</i>",
+        en: "The verb is always the second element. Regular verbs: stem + -e (ich), -st (du), -t (er/sie)." },
+      { title: "sein",
+        de: "ich <b>bin</b> · du <b>bist</b> · er/sie <b>ist</b><br><i>Ich bin Anna. Du bist Student. Sie ist 25 Jahre alt.</i>",
+        en: "'sein' (to be) is irregular. Use it for name, job and age." },
+      { title: "Fragen und Antworten",
+        de: "<b>Wie</b> heißt du? – Ich heiße Ali.<br><b>Woher</b> kommst du? – Ich komme aus Syrien.<br><b>Wo</b> wohnst du? – Ich wohne in Köln.",
+        en: "Wie = how/what, Woher = where from, Wo = where. Answer in a full sentence." }
+    ],
+    listening: {
+      lines: [[0,"Hallo! Ich heiße Anna. Und wie heißt du?"],[1,"Hallo Anna. Ich bin Tom. Ich komme aus Österreich."],[0,"Ich komme aus Pakistan, aber ich wohne in Berlin."],[1,"Ich wohne auch in Berlin. Ich bin 28 Jahre alt."]],
+      names: ["Anna","Tom"],
+      qs: [
+        {t:"mcq",tag:"wortschatz",q:"Wie heißt der Mann?",opts:["Tom","Anna","Ali"],a:0},
+        {t:"mcq",tag:"fragen",q:"Woher kommt Anna?",opts:["Aus Pakistan","Aus Österreich","Aus Berlin"],a:0},
+        {t:"mcq",tag:"fragen",q:"Wo wohnen Anna und Tom?",opts:["In Berlin","In Wien","In Köln"],a:0}
+      ]
+    },
+    exercises: [
+      {t:"mcq",tag:"sein",q:"Ich ___ Studentin.",en:"Choose the correct form.",opts:["bin","bist","ist"],a:0},
+      {t:"build",tag:"verb",q:"Bilde den Satz.",en:"Build the sentence: I come from Syria.",words:["Ich","komme","aus","Syrien"]},
+      {t:"type",tag:"verb",q:"Du ___ in Köln. (wohnen)",en:"Type the missing verb.",a:["wohnst"]},
+      {t:"listen",tag:"wortschatz",say:"Ich wohne in Berlin.",q:"Was hörst du?",opts:["Ich wohne in Berlin.","Ich komme aus Berlin.","Ich heiße Berlin."],a:0},
+      {t:"mcq",tag:"fragen",q:"Wie heißt du?",en:"Choose the best answer.",opts:["Ich heiße Anna.","Ich wohne in Anna.","Ich komme Anna."],a:0}
+    ],
+    speaking: {
+      scene: "Im Sprachkurs lernst du Lena kennen.",
+      steps: [
+        {q:"Hallo! Ich bin Lena. Wie heißt du?",re:"(ich heisse|mein name ist) \\S+",model:"Ich heiße Anna.",tip:"Beginne mit: Ich heiße … oder Mein Name ist …",tag:"fragen"},
+        {q:"Woher kommst du?",re:"ich komme aus \\S+",model:"Ich komme aus Pakistan.",tip:"Sage: Ich komme aus + Land.",tag:"fragen"},
+        {q:"Und wo wohnst du?",re:"ich wohne in \\S+",model:"Ich wohne in Berlin.",tip:"Sage: Ich wohne in + Stadt.",tag:"fragen"},
+        {q:"Wie alt bist du?",re:"ich bin \\S+ jahre( alt)?",model:"Ich bin 25 Jahre alt.",tip:"Sage: Ich bin + Zahl + Jahre alt.",tag:"sein"}
+      ]
+    },
+    test: [
+      {t:"mcq",tag:"verb",q:"Wie ___ du? – Ich heiße Ali.",opts:["heißt","heiße","heißen"],a:0},
+      {t:"mcq",tag:"sein",q:"Ich ___ 25 Jahre alt.",opts:["bin","bist","ist"],a:0},
+      {t:"build",tag:"fragen",q:"Bilde die Frage.",en:"Build the question: Where do you live?",words:["Wo","wohnst","du"]},
+      {t:"type",tag:"verb",q:"Woher ___ du? (kommen)",en:"Type the missing verb.",a:["kommst"]},
+      {t:"mcq",tag:"wortschatz",q:"Berlin ist eine ___.",opts:["Stadt","Land","Name"],a:0}
+    ],
+    tagInfo: {
+      verb: {name:"Verben (heißen, kommen, wohnen)",tip:"Wiederhole: ich -e, du -st, er/sie -t. Das Verb steht auf Position 2."},
+      sein: {name:"sein",tip:"Lerne auswendig: ich bin · du bist · er/sie ist."},
+      fragen: {name:"Fragen und Antworten",tip:"Übe laut: Wie heißt du? Woher kommst du? Wo wohnst du? Antworte mit einem ganzen Satz."},
+      wortschatz: {name:"Wortschatz",tip:"Höre die Wörter noch einmal an und schreibe sie mit Artikel."}
+    }
+  }],
+
   examInfo: "telc Deutsch A1: written part (Lesen, Hören, Schreiben) plus an oral part (Sprechen). This app's tasks are telc-style practice, not copies. Check pass marks and the exact format on telc.de and do the official Übungstest regularly."
 };
