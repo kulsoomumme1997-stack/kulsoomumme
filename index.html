@@ -49,9 +49,31 @@ function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s){if(s.les
   return {cards:{},seen:0,days:[],sessDays:[],sessions:0,notes:{}}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-function say(t){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(t);u.lang="de-DE";u.rate=.85;
-  const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith("de"));if(v)u.voice=v;speechSynthesis.speak(u)}
+// ---- voices: pick the best German voice the device has ----
+let VOICES=[];
+function loadVoices(){if(!("speechSynthesis" in window))return;VOICES=speechSynthesis.getVoices().filter(v=>v.lang&&/^de([-_]|$)/i.test(v.lang));if($("#voicebox"))renderVoice()}
+function vScore(v){const n=v.name.toLowerCase();let x=0;
+  if(/natural|neural|premium|enhanced|erweitert/.test(n))x+=50;if(/siri/.test(n))x+=40;if(/google/.test(n))x+=30;if(/online/.test(n))x+=20;
+  if(/espeak|compact|eloquence|eddy|flo\b|grandma|grandpa|reed|rocko|sandy|shelley/.test(n))x-=60;
+  if(/^de[-_]de/i.test(v.lang))x+=10;return x}
+const rankedVoices=()=>VOICES.slice().sort((a,b)=>vScore(b)-vScore(a));
+function pickVoice(second){const L=rankedVoices();if(!L.length)return null;
+  const main=(S.voice&&L.find(v=>v.name===S.voice))||L[0];if(!second)return main;
+  const alt=L.find(v=>v.name!==main.name&&vScore(v)>=0);return alt||main}
+function utter(t,second){const u=new SpeechSynthesisUtterance(t);u.lang="de-DE";u.rate=S.rate||.9;const v=pickVoice(second);if(v){u.voice=v;u.lang=v.lang}return u}
+function say(t){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();speechSynthesis.speak(utter(t))}
+function renderVoice(){
+  const box=$("#voicebox");if(!box)return;const L=rankedVoices(),cur=pickVoice();
+  if(!("speechSynthesis" in window)){box.innerHTML=`<p class="mute">This browser cannot read text aloud.</p>`;return}
+  box.innerHTML=(L.length?`<label class="mute" for="vsel">German voice (best first)</label><select id="vsel" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin:6px 0">${L.map(v=>`<option value="${esc(v.name)}"${cur&&v.name===cur.name?" selected":""}>${esc(v.name)} (${esc(v.lang)})</option>`).join("")}</select>`
+    :`<div class="fbk bad"><b>No German voice found on this device.</b><div class="tip">German is being read by a voice for another language, so it sounds wrong. Install a German voice (steps below), then reopen the app.</div></div>`)
+  +`<label class="mute" for="rsel">Speed</label><select id="rsel" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin:6px 0">${[[.75,"Slow"],[.9,"Normal"],[1,"Natural speed"]].map(([v,n])=>`<option value="${v}"${(S.rate||.9)===v?" selected":""}>${n}</option>`).join("")}</select>
+  <button id="vtest">🔊 Test voice</button>
+  <p class="mute">Better voices: <b>iPhone</b> Settings → Accessibility → Spoken Content → Voices → Deutsch, download an "Enhanced" or "Premium" voice. <b>Android</b> Settings → System → Languages → Text-to-speech → install German voice data. <b>Computer</b> Microsoft Edge has the most natural free German voices; Chrome has "Google Deutsch".</p>`;
+  if($("#vsel"))$("#vsel").onchange=e=>{S.voice=e.target.value;save();say("Guten Tag! Ich heiße Anna.")};
+  $("#rsel").onchange=e=>{S.rate=+e.target.value;save()};
+  $("#vtest").onclick=()=>say("Guten Tag! Ich heiße Anna und ich wohne in Berlin. Sechzehn, sechzig, siebzehn, siebzig. Mütter, Brüder, Töchter.");
+}
 function stopAudio(){try{if("speechSynthesis" in window)speechSynthesis.cancel()}catch(e){}}
 function armed(b,fn,label){if(b.dataset.arm)return fn();b.dataset.arm=1;const t=b.textContent;b.textContent=label||"Tap again to confirm";setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent=t}},3000)}
 function addMistake(q,correct,tag,it){S.mistakes=(S.mistakes||[]).filter(m=>!(m.q===q&&m.correct===correct));S.mistakes.unshift({q,correct,tag,date:dayNum(),it});S.mistakes=S.mistakes.slice(0,60);save()}
@@ -88,9 +110,10 @@ const BLOCKS=[
 function home(){
   stopAudio();clearTimeout(tick.t);app.className="";
   const d=dayNum(),done=(S.sessDays||[]).includes(d),due=dueCards().length,Ls=CONTENT.lessons,next=Ls.find(l=>!lessonPassed(l.id)),anyPassed=Ls.some(l=>lessonPassed(l.id));
-  const rs=S.resume&&Ls.find(l=>l.id===S.resume.id);
+  const rs=S.resume&&Ls.find(l=>l.id===S.resume.id),novoice=("speechSynthesis" in window)&&speechSynthesis.getVoices().length>0&&!VOICES.length;
   const nm=(S.mistakes||[]).filter(m=>m.it).length,st=streak(),blocks=BLOCKS.map(b=>b.name.replace(/ \(.*/,"")).join(" · ");
   app.innerHTML=`<div class="row space"><h1>A1 Täglich</h1><div class="pill">🔥 ${st} ${st===1?"day":"days"}</div></div>
+  ${novoice?`<div class="fbk bad"><b>No German voice on this device.</b><div class="tip">The audio will sound wrong until you install one. See Voice under "More" below.</div></div>`:""}
   ${rs?`<div class="card hero"><div class="mute">You stopped in the middle</div><h2>Lektion ${rs.id} · ${esc(rs.title)}</h2><button class="p big-btn" onclick="startLesson('${rs.id}',true)">Resume at step ${S.resume.k+1}</button></div>`:""}
   ${next&&!rs?`<div class="card hero"><div class="mute">${anyPassed?"Continue your course":"Start here"}</div><h2>Lektion ${next.id} · ${esc(next.title)}</h2><p class="mute">~${next.minutes} min · words, grammar, listening, reading, speaking, test</p><button class="p big-btn" onclick="startLesson('${next.id}')">${S.lessons&&S.lessons[next.id]?"Try again":"Start lesson"}</button></div>`:""}
   <div class="card${next||rs?"":" hero"}"><div class="row space"><h2>Daily training · 30 min</h2><span class="mute">${due} due</span></div><p class="mute">${blocks}</p>
@@ -102,12 +125,14 @@ function home(){
   <div class="row"><button class="${nm?"p":""}" ${nm?"":"disabled"} onclick="practiseMistakes()">Practise mistakes</button><button onclick="showMistakes()">See list</button></div></div>
   <div class="card"><h2>Extra practice</h2><p class="mute">Optional drills, any time. They use words you have already met.</p>
   <div class="row"><button onclick="extra('write')">Write the word</button><button onclick="extra('hear')">Listen &amp; type</button><button onclick="extra('artikel')">der / die / das</button><button onclick="extra('szene')">Daily scenes</button></div></div>
-  <details class="card"><summary><b>More</b> <span class="mute">exam info, backup, reset</span></summary>
+  <details class="card"${novoice?" open":""}><summary><b>More</b> <span class="mute">voice, exam info, backup, reset</span></summary>
+  <p><b>Voice</b></p><div id="voicebox"></div>
   <p><b>Exam</b></p><p class="mute">${CONTENT.examInfo}</p>
   <p><b>Backup</b></p><p class="mute">Your progress lives only on this device. Save a backup file now and then, and import it on a new phone.</p>
   <div class="row"><button onclick="exportData()">Export backup</button><button onclick="document.getElementById('imp').click()">Import backup</button>
   <input id="imp" type="file" accept="application/json,.json" hidden onchange="importData(this.files[0])"></div><p id="bmsg" class="mute"></p>
   <button class="mute" onclick="armed(this,()=>{localStorage.removeItem(KEY);S=load();home()},'Tap again to erase everything')">Reset progress</button></details>`;
+  renderVoice();
 }
 function start(){cur=0;started=Date.now();S._n={newWords:[]};runBlock()}
 function runBlock(){
@@ -266,8 +291,8 @@ function rec(tag,ok,q,given,correct,it){
 }
 function sayAll(lines){
   if(!("speechSynthesis" in window))return;speechSynthesis.cancel();
-  const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith("de"));
-  lines.forEach(([who,t,sp])=>{const u=new SpeechSynthesisUtterance(sp||t);u.lang="de-DE";u.rate=.85;u.pitch=who===0?1.25:.8;if(v)u.voice=v;speechSynthesis.speak(u)});
+  const two=pickVoice(true)!==pickVoice();
+  lines.forEach(([who,t,sp])=>{const u=utter(sp||t,who===1);if(!two&&who===1)u.pitch=.9;speechSynthesis.speak(u)});
 }
 function showMistakes(){
   const m=S.mistakes||[],n=m.filter(x=>x.it).length;
@@ -472,7 +497,7 @@ function lsFeedback(el){
   ${L.review?`<div class="card"><h2>Wiederholung</h2><p>${esc(L.review)}</p></div>`:""}
   <div class="row"><button onclick="home()">Home</button><button onclick="startLesson('${L.id}')">Lektion wiederholen</button>${pass&&nxt&&miss.length?`<button onclick="startLesson('${nxt.id}')">Nächste Lektion</button>`:""}</div>`;
 }
-if("speechSynthesis" in window)speechSynthesis.getVoices();
+if("speechSynthesis" in window){loadVoices();speechSynthesis.addEventListener("voiceschanged",()=>{const had=VOICES.length;loadVoices();if(!had&&$("#voicebox"))home()})}
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 home();
 </script>
