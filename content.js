@@ -791,8 +791,8 @@ const CONTENT = {
       _mc("alter","Welcher Satz ist richtig?",["Wie alt bist du?","Wie alt du bist?"],0),
       _mc("nummer","Welcher Satz ist richtig?",["Meine Telefonnummer ist 0176 123456.","Meine Telefonnummer sein 0176 123456."],0),
       _mc("alter","Wie alt ist Sara?",["31","13","30"],0,{ctx:"Sara ist 31 Jahre alt. Sie kommt aus Spanien und wohnt in München."}),
-      _mc("hoer","Woher kommt Sara?",["Aus Spanien","Aus München","Aus Italien"],0,{ctx:"Sara ist 31 Jahre alt. Sie kommt aus Spanien und wohnt in München."}),
-      _mc("hoer","Wo wohnt Sara?",["In München","In Spanien","In Berlin"],0,{ctx:"Sara ist 31 Jahre alt. Sie kommt aus Spanien und wohnt in München."})
+      _mc("lesen","Woher kommt Sara?",["Aus Spanien","Aus München","Aus Italien"],0,{ctx:"Sara ist 31 Jahre alt. Sie kommt aus Spanien und wohnt in München."}),
+      _mc("lesen","Wo wohnt Sara?",["In München","In Spanien","In Berlin"],0,{ctx:"Sara ist 31 Jahre alt. Sie kommt aus Spanien und wohnt in München."})
     ],
     test: [
       _ty("zahlen","Schreibe als Ziffer: einundzwanzig","21"),
@@ -880,7 +880,7 @@ const CONTENT = {
       _mc("mein","Welcher Satz ist richtig?",["Meine Schwester heißt Sara.","Mein Schwester heißt Sara."],0),
       _mc("heissen","Welcher Satz ist richtig?",["Mein Bruder heißt Ali.","Mein Bruder heißen Ali."],0),
       _mc("heissen","Wie heißen die Eltern?",["Nadia und Imran","Bilal und Nadia","Imran und Bilal"],0,{ctx:"Omar: Seine Mutter heißt Nadia. Sein Vater heißt Imran. Sein Bruder heißt Bilal."}),
-      _mc("hoer","Hat Omar einen Bruder?",["Ja","Nein"],0,{ctx:"Omar: Seine Mutter heißt Nadia. Sein Vater heißt Imran. Sein Bruder heißt Bilal."}),
+      _mc("lesen","Hat Omar einen Bruder?",["Ja","Nein"],0,{ctx:"Omar: Seine Mutter heißt Nadia. Sein Vater heißt Imran. Sein Bruder heißt Bilal."}),
       _mc("heissen","Wie heißt Omars Bruder?",["Bilal","Imran","Nadia"],0,{ctx:"Omar: Seine Mutter heißt Nadia. Sein Vater heißt Imran. Sein Bruder heißt Bilal."}),
       _fr("heissen","Mutter: Anna · Vater: Paul. Schreibe einen Satz über die Mutter.","(das ist meine mutter|meine mutter heisst|sie heisst).*anna","Das ist meine Mutter. Sie heißt Anna."),
       _fr("heissen","Mutter: Anna · Vater: Paul. Schreibe einen Satz über den Vater.","(das ist mein vater|mein vater heisst|er heisst).*paul","Das ist mein Vater. Er heißt Paul.")
