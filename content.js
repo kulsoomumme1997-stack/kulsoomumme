@@ -620,6 +620,7 @@ const CONTENT = {
       qs: [_tf("lesen","Lina ist neu hier.",0),_tf("lesen","Omar ist nicht nett.",1),_tf("lesen","Die Frau heißt Omar.",1)]
     },
     writing: "Schreibe drei bis fünf Sätze über dich. Benutze: Hallo! Ich heiße … / Ich bin … / Mein Name ist … / Tschüss!",
+    writingModel: "Hallo! Ich heiße Sara. Ich bin neu hier. Mein Name ist Sara Khan. Tschüss!",
     speaking: {
       task: "Du bist neu in einem Deutschkurs. Begrüße eine Person. Sage deinen Namen und frage nach dem Namen. Verabschiede dich.",
       scene: "Im Deutschkurs triffst du Lena.",
@@ -687,6 +688,7 @@ const CONTENT = {
       qs: [_tf("lesen","Amir wohnt in München.",0),_tf("lesen","Amir spricht Deutsch und Englisch.",1),_tf("lesen","Amir lernt jetzt Deutsch.",0)]
     },
     writing: "Schreibe vier bis sechs Sätze über dich. Benutze: Ich heiße … / Ich komme aus … / Ich wohne in … / Ich spreche … / Ich lerne Deutsch.",
+    writingModel: "Ich heiße Amir. Ich komme aus Pakistan. Ich wohne in München. Ich spreche Urdu und Englisch. Ich lerne Deutsch.",
     speaking: {
       task: "Du lernst eine neue Person kennen. Frage nach dem Namen, dem Herkunftsland, dem Wohnort und den Sprachen. Antworte auch auf diese Fragen.",
       scene: "Du lernst Lena kennen.",
@@ -759,11 +761,12 @@ const CONTENT = {
       qs: [_tf("lesen","Omar ist 24 Jahre alt.",0),_tf("lesen","Der Deutschkurs beginnt um zehn Uhr.",1),_tf("lesen","Omar schreibt die Nummer in sein Handy.",0)]
     },
     writing: "Schreibe fünf Sätze über dich: Hallo! Ich heiße … / Ich komme aus … / Ich wohne in … / Ich bin … Jahre alt. / Meine Telefonnummer ist … Schreibe die Telefonnummer auch mit Wörtern.",
+    writingModel: "Hallo! Ich heiße Omar. Ich komme aus Pakistan. Ich wohne in München. Ich bin 24 Jahre alt. Meine Telefonnummer ist 0176 123456: null eins sieben sechs, eins zwei drei, vier fünf sechs.",
     speaking: {
       task: "Du bist in einem Deutschkurs und lernst eine neue Person kennen. Frage nach dem Namen, dem Herkunftsland, dem Wohnort, dem Alter und der Telefonnummer. Bitte die Person, die Telefonnummer zu wiederholen.",
       scene: "Du lernst Lena im Deutschkurs kennen.",
       steps: [
-        {q:"Wie alt bist du?",re:"ich bin \\S+( jahre( alt)?)?",model:"Ich bin 29 Jahre alt.",tip:"Sage: Ich bin + Zahl + Jahre alt.",tag:"alter"},
+        {q:"Wie alt bist du?",re:"ich bin (\\d+|\\S+ jahre)",model:"Ich bin 29 Jahre alt.",tip:"Sage: Ich bin + Zahl + Jahre alt.",tag:"alter"},
         {q:"Wie ist deine Telefonnummer?",re:"(nummer ist|\\d{3,}|null )",model:"Meine Telefonnummer ist 0176 123456.",tip:"Sage: Meine Telefonnummer ist … Sprich die Ziffern einzeln.",tag:"nummer"},
         {q:"Meine Nummer ist 0176 28 41 90 35. Bitte wiederhole die Nummer.",spoken:"Meine Nummer ist null eins sieben sechs, zwei acht, vier eins, neun null, drei fünf. Bitte wiederhole die Nummer.",re:"(0176|null eins sieben sechs)",model:"Null eins sieben sechs, zwei acht, vier eins, neun null, drei fünf.",tip:"Wiederhole die Ziffern: null eins sieben sechs …",tag:"nummer"}
       ]
@@ -826,7 +829,8 @@ const CONTENT = {
     grammar: [
       {title:"„mein“ und „meine“",de:"der Vater → <b>mein</b> Vater · das Kind → <b>mein</b> Kind<br>die Mutter → <b>meine</b> Mutter · die Schwester → <b>meine</b> Schwester<br>Im Plural: <b>meine</b> Eltern, <b>meine</b> Geschwister",en:"der/das nouns take 'mein'. die nouns and plurals take 'meine'."},
       {title:"„Das ist“ und „Das sind“",de:"Eine Person: Das ist mein Vater.<br>Mehrere Personen: Das sind meine Eltern.",en:"One person: ist. More than one: sind."},
-      {title:"„Er heißt“, „Sie heißt“ und „Sie heißen“",de:"Ein Mann: Er heißt Ali.<br>Eine Frau: Sie heißt Sara.<br>Mehrere Personen: Sie heißen Amina und Ahmed.",en:"er = he, sie = she, sie (plural) = they."}
+      {title:"„Er heißt“, „Sie heißt“ und „Sie heißen“",de:"Ein Mann: Er heißt Ali.<br>Eine Frau: Sie heißt Sara.<br>Mehrere Personen: Sie heißen Amina und Ahmed.",en:"er = he, sie = she, sie (plural) = they."},
+      {title:"Ich habe …",de:"Ich habe <b>eine</b> Schwester. Ich habe <b>einen</b> Bruder.<br>Nach „haben“: der Bruder → <b>einen</b> Bruder.",en:"After 'haben', masculine 'ein' becomes 'einen'. You only need to recognise it here. (This card was added to the booklet because the reading text uses it.)"}
     ],
     listening: {
       names: ["Sara","Lina"],
@@ -842,6 +846,7 @@ const CONTENT = {
       qs: [_tf("lesen","Amina wohnt in München.",0),_tf("lesen","Aminas Schwester wohnt in Berlin.",0),_tf("lesen","Aminas Bruder ist 52 Jahre alt.",1),_tf("lesen","Aminas Eltern wohnen in München.",1)]
     },
     writing: "Schreibe fünf bis sieben einfache Sätze über deine Familie. Benutze: Meine Familie ist … / Meine Mutter heißt … / Mein Vater heißt … / Mein Bruder heißt … / Meine Schwester heißt … / Meine Eltern wohnen … Du kannst auch eine erfundene Familie beschreiben.",
+    writingModel: "Meine Familie ist groß. Meine Mutter heißt Fatima. Mein Vater heißt Ahmed. Mein Bruder heißt Ali. Meine Schwester heißt Sara. Meine Eltern wohnen in Pakistan.",
     speaking: {
       task: "Du zeigst einer Freundin oder einem Freund ein Familienfoto. Beschreibe mindestens fünf Personen oder Sätze. Benutze: Das ist … / Das sind … / Er heißt … / Sie heißt … / Sie heißen …",
       scene: "Du zeigst Lena ein Familienfoto.",
@@ -963,6 +968,7 @@ const CONTENT = {
   }],
 
   tagInfoCommon: {
+    wortschatz: {name:"Wortschatz",tip:"Höre die Wörter noch einmal an und sprich sie laut."},
     hoer: {name:"Hören",tip:"Höre das Gespräch noch einmal. Achte auf Namen und Zahlen."},
     lesen: {name:"Lesen",tip:"Lies den Text noch einmal langsam und suche die Antwort im Text."}
   },
