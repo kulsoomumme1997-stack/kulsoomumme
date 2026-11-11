@@ -973,5 +973,7 @@ const CONTENT = {
     lesen: {name:"Lesen",tip:"Lies den Text noch einmal langsam und suche die Antwort im Text."}
   },
 
+  voiceTest: "Guten Tag! Ich heiße Anna und ich wohne in Berlin. Sechzehn, sechzig, siebzehn, siebzig. Mütter, Brüder, Töchter.",
+
   examInfo: "telc Deutsch A1: written part (Lesen, Hören, Schreiben) plus an oral part (Sprechen). This app's tasks are telc-style practice, not copies. Check pass marks and the exact format on telc.de and do the official Übungstest regularly."
 };

@@ -61,20 +61,43 @@ function pickVoice(second){const L=rankedVoices();if(!L.length)return null;
   const main=(S.voice&&L.find(v=>v.name===S.voice))||L[0];if(!second)return main;
   const alt=L.find(v=>v.name!==main.name&&vScore(v)>=0);return alt||main}
 function utter(t,second){const u=new SpeechSynthesisUtterance(t);u.lang="de-DE";u.rate=S.rate||.9;const v=pickVoice(second);if(v){u.voice=v;u.lang=v.lang}return u}
-function say(t){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();speechSynthesis.speak(utter(t))}
-function renderVoice(){
-  const box=$("#voicebox");if(!box)return;const L=rankedVoices(),cur=pickVoice();
-  if(!("speechSynthesis" in window)){box.innerHTML=`<p class="mute">This browser cannot read text aloud.</p>`;return}
-  box.innerHTML=(L.length?`<label class="mute" for="vsel">German voice (best first)</label><select id="vsel" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin:6px 0">${L.map(v=>`<option value="${esc(v.name)}"${cur&&v.name===cur.name?" selected":""}>${esc(v.name)} (${esc(v.lang)})</option>`).join("")}</select>`
-    :`<div class="fbk bad"><b>No German voice found on this device.</b><div class="tip">German is being read by a voice for another language, so it sounds wrong. Install a German voice (steps below), then reopen the app.</div></div>`)
-  +`<label class="mute" for="rsel">Speed</label><select id="rsel" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin:6px 0">${[[.75,"Slow"],[.9,"Normal"],[1,"Natural speed"]].map(([v,n])=>`<option value="${v}"${(S.rate||.9)===v?" selected":""}>${n}</option>`).join("")}</select>
-  <button id="vtest">🔊 Test voice</button>
-  <p class="mute">Better voices: <b>iPhone</b> Settings → Accessibility → Spoken Content → Voices → Deutsch, download an "Enhanced" or "Premium" voice. <b>Android</b> Settings → System → Languages → Text-to-speech → install German voice data. <b>Computer</b> Microsoft Edge has the most natural free German voices; Chrome has "Google Deutsch".</p>`;
-  if($("#vsel"))$("#vsel").onchange=e=>{S.voice=e.target.value;save();say("Guten Tag! Ich heiße Anna.")};
-  $("#rsel").onchange=e=>{S.rate=+e.target.value;save()};
-  $("#vtest").onclick=()=>say("Guten Tag! Ich heiße Anna und ich wohne in Berlin. Sechzehn, sechzig, siebzehn, siebzig. Mütter, Brüder, Töchter.");
+function ttsSpeak(t,second){return new Promise(res=>{if(!("speechSynthesis" in window))return res();const u=utter(t,second);if(second&&pickVoice(true)===pickVoice())u.pitch=.9;u.onend=u.onerror=()=>res();speechSynthesis.speak(u);setTimeout(res,20000)})}
+// ---- built-in German recordings; the device voice is only a fallback ----
+const AUD={idx:null,failed:false,packs:{},cur:null,tok:0,ctx:null};
+const audReady=fetch("audio/index.json").then(r=>r.ok?r.json():Promise.reject()).then(j=>{AUD.idx=j;if($("#voicebox"))renderVoice()}).catch(()=>{AUD.failed=true;if($("#voicebox"))home()});
+function getPack(n){return AUD.packs[n]||(AUD.packs[n]=fetch("audio/"+n+".mp3").then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).catch(e=>{delete AUD.packs[n];throw e}))}
+async function clip(voice,text){await audReady;const e=AUD.idx&&AUD.idx[voice+"|"+text];if(!e)return null;const buf=await getPack(e[0]);return buf.slice(e[1],e[1]+e[2])}
+function playEl(ab){return new Promise(res=>{let url;try{url=URL.createObjectURL(new Blob([ab],{type:"audio/mpeg"}))}catch(e){return res(false)}
+  const a=new Audio(url),end=ok=>{URL.revokeObjectURL(url);res(ok)};AUD.cur=a;a.playbackRate=(S.rate||.9)<.85?.8:1;a.onended=()=>end(true);a.onerror=()=>end(false);a.onpause=()=>{if(!a.ended)end(true)};a.play().catch(()=>end(false))})}
+async function playCtx(ab){const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;
+  try{AUD.ctx=AUD.ctx||new C();await AUD.ctx.resume();const b=await AUD.ctx.decodeAudioData(ab.slice(0));
+    return await new Promise(res=>{const n=AUD.ctx.createBufferSource();n.buffer=b;n.connect(AUD.ctx.destination);n.onended=()=>res(true);AUD.cur={pause(){try{n.stop()}catch(e){}}};n.start()})}catch(e){return false}}
+async function playSeq(list){
+  stopAudio();const tok=AUD.tok;
+  for(const [voice,text,second] of list){
+    let ab=null;if(S.audio!=="device"){try{ab=await clip(voice,text)}catch(e){}}
+    if(tok!==AUD.tok)return;
+    if(ab){let ok=await playEl(ab);if(tok!==AUD.tok)return;if(!ok){ok=await playCtx(ab);if(tok!==AUD.tok)return}if(ok)continue}
+    await ttsSpeak(text,second);if(tok!==AUD.tok)return;
+  }
 }
-function stopAudio(){try{if("speechSynthesis" in window)speechSynthesis.cancel()}catch(e){}}
+function say(t,voice){playSeq([[voice||"m",t,false]])}
+function renderVoice(){
+  const box=$("#voicebox");if(!box)return;const L=rankedVoices(),cur=pickVoice(),built=!!AUD.idx,sel="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin:6px 0";
+  box.innerHTML=(built?`<p class="mute">German audio is built into the app: two recorded computer voices (Thorsten and Kerstin). It sounds the same on every device.</p>
+    <label class="mute" for="asel">Audio</label><select id="asel" style="${sel}"><option value="built"${S.audio!=="device"?" selected":""}>Built-in German audio (recommended)</option><option value="device"${S.audio==="device"?" selected":""}>My device's voice</option></select>`
+    :AUD.failed?`<div class="fbk bad"><b>Built-in audio could not be loaded.</b><div class="tip">The app is using your device's voice instead.</div></div>`:"")
+  +((AUD.failed||S.audio==="device")?(L.length?`<label class="mute" for="vsel">Device voice (best first)</label><select id="vsel" style="${sel}">${L.map(v=>`<option value="${esc(v.name)}"${cur&&v.name===cur.name?" selected":""}>${esc(v.name)} (${esc(v.lang)})</option>`).join("")}</select>`
+    :`<div class="fbk bad"><b>No German voice found on this device.</b><div class="tip">German would be read by a voice for another language. Use the built-in audio, or install a German voice in your device settings.</div></div>`):"")
+  +`<label class="mute" for="rsel">Speed</label><select id="rsel" style="${sel}">${[[.75,"Slow"],[.9,"Normal"]].map(([v,n])=>`<option value="${v}"${((S.rate||.9)<.85?.75:.9)===v?" selected":""}>${n}</option>`).join("")}</select>
+  <div class="row"><button id="vtest">🔊 Test (man)</button><button id="vtest2">🔊 Test (woman)</button>${built?`<button id="dl">Download audio for offline</button>`:""}</div><p id="dlmsg" class="mute"></p>`;
+  if($("#asel"))$("#asel").onchange=e=>{S.audio=e.target.value;save();renderVoice()};
+  if($("#vsel"))$("#vsel").onchange=e=>{S.voice=e.target.value;save();say(CONTENT.voiceTest)};
+  $("#rsel").onchange=e=>{S.rate=+e.target.value;save()};
+  $("#vtest").onclick=()=>say(CONTENT.voiceTest);$("#vtest2").onclick=()=>say(CONTENT.voiceTest,"f");
+  if($("#dl"))$("#dl").onclick=async()=>{const packs=[...new Set(Object.values(AUD.idx).map(e=>e[0]))];let n=0;for(const k of packs){$("#dlmsg").textContent=`Downloading ${++n}/${packs.length} …`;try{await getPack(k)}catch(e){$("#dlmsg").textContent="Download failed. Check your connection and try again.";return}}$("#dlmsg").textContent="All audio is saved on this device."};
+}
+function stopAudio(){AUD.tok++;if(AUD.cur){const c=AUD.cur;AUD.cur=null;try{c.pause()}catch(e){}}try{if("speechSynthesis" in window)speechSynthesis.cancel()}catch(e){}}
 function armed(b,fn,label){if(b.dataset.arm)return fn();b.dataset.arm=1;const t=b.textContent;b.textContent=label||"Tap again to confirm";setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent=t}},3000)}
 function addMistake(q,correct,tag,it){S.mistakes=(S.mistakes||[]).filter(m=>!(m.q===q&&m.correct===correct));S.mistakes.unshift({q,correct,tag,date:dayNum(),it});S.mistakes=S.mistakes.slice(0,60);save()}
 function lessonPassed(id){const p=(S.lessons||{})[id];return !!p&&(p.passed||p.best>=70)}
@@ -110,10 +133,10 @@ const BLOCKS=[
 function home(){
   stopAudio();clearTimeout(tick.t);app.className="";
   const d=dayNum(),done=(S.sessDays||[]).includes(d),due=dueCards().length,Ls=CONTENT.lessons,next=Ls.find(l=>!lessonPassed(l.id)),anyPassed=Ls.some(l=>lessonPassed(l.id));
-  const rs=S.resume&&Ls.find(l=>l.id===S.resume.id),novoice=("speechSynthesis" in window)&&speechSynthesis.getVoices().length>0&&!VOICES.length;
+  const rs=S.resume&&Ls.find(l=>l.id===S.resume.id),novoice=AUD.failed&&("speechSynthesis" in window)&&speechSynthesis.getVoices().length>0&&!VOICES.length;
   const nm=(S.mistakes||[]).filter(m=>m.it).length,st=streak(),blocks=BLOCKS.map(b=>b.name.replace(/ \(.*/,"")).join(" · ");
   app.innerHTML=`<div class="row space"><h1>A1 Täglich</h1><div class="pill">🔥 ${st} ${st===1?"day":"days"}</div></div>
-  ${novoice?`<div class="fbk bad"><b>No German voice on this device.</b><div class="tip">The audio will sound wrong until you install one. See Voice under "More" below.</div></div>`:""}
+  ${novoice?`<div class="fbk bad"><b>German audio is not available.</b><div class="tip">The built-in audio did not load and this device has no German voice. See Voice under "More" below.</div></div>`:""}
   ${rs?`<div class="card hero"><div class="mute">You stopped in the middle</div><h2>Lektion ${rs.id} · ${esc(rs.title)}</h2><button class="p big-btn" onclick="startLesson('${rs.id}',true)">Resume at step ${S.resume.k+1}</button></div>`:""}
   ${next&&!rs?`<div class="card hero"><div class="mute">${anyPassed?"Continue your course":"Start here"}</div><h2>Lektion ${next.id} · ${esc(next.title)}</h2><p class="mute">~${next.minutes} min · words, grammar, listening, reading, speaking, test</p><button class="p big-btn" onclick="startLesson('${next.id}')">${S.lessons&&S.lessons[next.id]?"Try again":"Start lesson"}</button></div>`:""}
   <div class="card${next||rs?"":" hero"}"><div class="row space"><h2>Daily training · 30 min</h2><span class="mute">${due} due</span></div><p class="mute">${blocks}</p>
@@ -289,11 +312,7 @@ function rec(tag,ok,q,given,correct,it){
   if(LR)LR.log.push({tag,ok,q,given,correct});
   if(!ok)addMistake(q,correct,tag,it);
 }
-function sayAll(lines){
-  if(!("speechSynthesis" in window))return;speechSynthesis.cancel();
-  const two=pickVoice(true)!==pickVoice();
-  lines.forEach(([who,t,sp])=>{const u=utter(sp||t,who===1);if(!two&&who===1)u.pitch=.9;speechSynthesis.speak(u)});
-}
+function sayAll(lines){playSeq(lines.map(([who,t,sp])=>[who===0?"f":"m",sp||t,who===1]))}
 function showMistakes(){
   const m=S.mistakes||[],n=m.filter(x=>x.it).length;
   app.innerHTML=`<div class="row space"><button class="x" onclick="home()">✕</button>${m.length?`<button onclick="armed(this,()=>{S.mistakes=[];save();showMistakes()},'Tap again to clear')">Clear all</button>`:""}</div><h1>Mistake bank</h1>
@@ -314,7 +333,7 @@ function practiseMistakes(){
 function tipsFor(L){const T=Object.assign({},CONTENT.tagInfoCommon||{},L.tagInfo),o={};Object.keys(T).forEach(k=>o[k]=T[k].tip);return o}
 function startLesson(id,resume){
   const L=CONTENT.lessons.find(l=>l.id===id),R=resume&&S.resume&&S.resume.id===id?S.resume:null;
-  LR={L,log:R?R.log.slice():[],test:R?R.test.slice():[]};if(!R){delete S.resume;save()}
+  LR={L,log:R?R.log.slice():[],test:R?R.test.slice():[]};audReady.then(()=>{if(AUD.idx)getPack("l"+id).catch(()=>{})});if(!R){delete S.resume;save()}
   const steps=[["Lernziel",lsIntro],["Wortschatz",lsVocab],["Grammatik",lsGrammar],["Hören",lsListen]];
   if(L.reading)steps.push(["Lesen",lsRead]);
   if(L.writing)steps.push(["Schreiben",lsWrite]);
@@ -462,7 +481,7 @@ function lsSpeak(el,next,skip){
     <p class="mute">Antworte mit einem ganzen Satz${SR?" (Mikrofon oder Tastatur)":""}.</p>
     <input id="ti" autocomplete="off" spellcheck="false" style="width:100%;font:inherit;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">
     <div class="row" style="margin:10px 0">${SR?`<button id="mic">🎤 Sprechen</button>`:""}<button class="p" id="sd">Senden</button></div><div id="fb"></div></div>`;
-    say(st.spoken||st.q);$("#rp").onclick=()=>say(st.spoken||st.q);
+    say(st.spoken||st.q,"f");$("#rp").onclick=()=>say(st.spoken||st.q,"f");
     if(SR)$("#mic").onclick=()=>{const bad=()=>{$("#fb").innerHTML=`<span class="mute">Mikrofon nicht verfügbar. Bitte tippe deine Antwort.</span>`};try{stopAudio();const r=new SR();r.lang="de-DE";r.interimResults=false;r.onresult=e=>{$("#ti").value=e.results[0][0].transcript};r.onerror=bad;r.start()}catch(e){bad()}};
     const send=()=>{
       const v=$("#ti").value.trim();if(!v)return;
