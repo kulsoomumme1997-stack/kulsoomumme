@@ -36,7 +36,7 @@ const KEY="a1-taeglich-v1", $=s=>document.querySelector(s), app=$("#app");
 const dayNum=()=>{const d=new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)};
 const INTERVALS=[0,1,2,4,8,16,32]; // days per Leitner box
 let S=load();
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s)return s}catch(e){}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s){if(s.lessons&&s.lessons["01"]&&!s.mig2){s.lessons["05"]=s.lessons["01"];delete s.lessons["01"]}s.mig2=1;return s}}catch(e){}
   return {cards:{},seen:0,days:[],sessions:0,notes:{}}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -80,8 +80,8 @@ function home(){
   <div class="card"><h2>Today · 30 min</h2>${BLOCKS.map(b=>`<div class="step"><span>${b.name}</span><span class="mute">${b.min} min</span></div>`).join("")}
   <p class="mute">${done?"✅ Already done today. Doing it again is fine, but sleep matters more than extra reps.":""}</p>
   <button class="p" onclick="start()">${done?"Practise again":"Start today's session"}</button></div>
-  <div class="card"><div class="row space"><b>Lektion 01 · ${CONTENT.lessons[0].title}</b><span class="mute">~${CONTENT.lessons[0].minutes} min</span></div>
-  <p class="mute">${S.lessons&&S.lessons["01"]?"Best score: "+S.lessons["01"].best+"%":"A complete guided lesson: words, grammar, listening, exercises, speaking and a test."}</p><button class="p" onclick="startLesson('01')">${S.lessons&&S.lessons["01"]?"Repeat lesson":"Start lesson"}</button></div>
+  <div class="card"><b>Lektionen</b><p class="mute">Short guided lessons from the Deutsch Daily course. Do them in order.</p>
+  ${CONTENT.lessons.map(l=>`<div class="row space" style="padding:8px 0;border-top:1px solid var(--line)"><div><b>${l.id} · ${esc(l.title)}</b><div class="mute">~${l.minutes} min${S.lessons&&S.lessons[l.id]?" · best "+S.lessons[l.id].best+"%":""}</div></div><button class="p" onclick="startLesson('${l.id}')">${S.lessons&&S.lessons[l.id]?"Repeat":"Start"}</button></div>`).join("")}</div>
   <div class="card"><b>Extra practice</b><p class="mute">Optional drills, any time. They use words you have already met.</p>
   <div class="row"><button onclick="extra('write')">Write the word</button><button onclick="extra('hear')">Listen &amp; type</button><button onclick="extra('artikel')">der / die / das</button><button onclick="extra('szene')">Daily scenes</button></div></div>
   <div class="card"><b>Exam</b><p class="mute">${CONTENT.examInfo}</p></div>
@@ -244,7 +244,7 @@ function rec(tag,ok,q,given,correct){
 function sayAll(lines){
   if(!("speechSynthesis" in window))return;speechSynthesis.cancel();
   const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith("de"));
-  lines.forEach(([who,t])=>{const u=new SpeechSynthesisUtterance(t);u.lang="de-DE";u.rate=.85;u.pitch=who===0?1.25:.8;if(v)u.voice=v;speechSynthesis.speak(u)});
+  lines.forEach(([who,t,sp])=>{const u=new SpeechSynthesisUtterance(sp||t);u.lang="de-DE";u.rate=.85;u.pitch=who===0?1.25:.8;if(v)u.voice=v;speechSynthesis.speak(u)});
 }
 function showMistakes(){
   const m=S.mistakes||[];
@@ -253,7 +253,11 @@ function showMistakes(){
 }
 function startLesson(id){
   const L=CONTENT.lessons.find(l=>l.id===id);LR={L,log:[],test:[]};
-  const steps=[["Lernziel",lsIntro],["Wortschatz",lsVocab],["Grammatik",lsGrammar],["Hören",lsListen],["Üben",lsPractice],["Sprechen",lsSpeak],["Mini-Test",lsTest],["Feedback",lsFeedback]];
+  const steps=[["Lernziel",lsIntro],["Wortschatz",lsVocab],["Grammatik",lsGrammar],["Hören",lsListen]];
+  if(L.reading)steps.push(["Lesen",lsRead]);
+  if(L.writing)steps.push(["Schreiben",lsWrite]);
+  if(L.docOrder)steps.push(["Sprechen",lsSpeak],["Üben",lsPractice]);else steps.push(["Üben",lsPractice],["Sprechen",lsSpeak]);
+  steps.push(["Mini-Test",lsTest],["Feedback",lsFeedback]);
   let k=0;
   app.className="";
   app.innerHTML=`<div class="row space"><button onclick="home()">← Home</button><button id="enb">English</button></div>
@@ -264,18 +268,18 @@ function startLesson(id){
 }
 function lsIntro(el,next){
   const L=LR.L;
-  el.innerHTML=`<div class="card"><h2>Lektion ${L.id}: ${esc(L.title)}</h2><p><b>Lernziel:</b> ${esc(L.goal)}</p><div class="en">${esc(L.goalEn)}</div>
-  <p class="mute">${L.minutes} Minuten · 10 Wörter · 3 Grammatikpunkte · Hören · 5 Übungen · Sprechen · Mini-Test</p><button class="p" id="go">Los geht's</button></div>`;
+  el.innerHTML=`<div class="card"><h2>Lektion ${L.id}: ${esc(L.title)}</h2><p><b>Du kannst …</b></p>${L.goals?`<ul>${L.goals.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>`:`<p>${esc(L.goal)}</p>`}<div class="en">${esc(L.goalEn)}</div>
+  <p class="mute">${L.level?esc(L.level)+" · ":""}${L.minutes} Minuten</p><button class="p" id="go">Los geht's</button></div>`;
   $("#go").onclick=next;
 }
 function lsVocab(el,next){
   const L=LR.L;
   el.innerHTML=`<div class="card"><h2>Neue Wörter</h2><p class="mute">Höre jedes Wort und sprich es laut nach.</p>
-  ${L.vocab.map((w,i)=>`<div class="row space" style="padding:8px 0;border-top:1px solid var(--line)"><div><b>${esc(w[0])}</b>${w[1]?` <span class="mute">(${esc(w[1])})</span>`:""}<div class="mute">${esc(w[2])} · <i>${esc(w[3])}</i></div></div><button data-i="${i}" class="sp">🔊</button></div>`).join("")}
+  ${L.vocab.map((w,i)=>`<div class="row space" style="padding:8px 0;border-top:1px solid var(--line)"><div><b>${esc(w[0])}</b>${w[1]?` <span class="mute">(${esc(w[1])})</span>`:""}${w[4]?`<div class="mute">${esc(w[4])}</div>`:""}<div class="mute"><i>${esc(w[3])}</i></div>${L.docOrder?`<div class="en">${esc(w[2])}</div>`:`<div class="mute">${esc(w[2])}</div>`}</div><button data-i="${i}" class="sp">🔊</button></div>`).join("")}
   <button class="p" id="go" style="margin-top:12px">Weiter</button></div>`;
   el.querySelectorAll(".sp").forEach(b=>b.onclick=()=>{const w=L.vocab[b.dataset.i];say(w[0]+". "+w[3])});
   $("#go").onclick=()=>{
-    L.vocab.forEach(w=>{const i=CONTENT.vocab.findIndex(v=>v[0]===w[0]);if(i>=0&&!S.cards[i])S.cards[i]={box:1,due:dayNum()+1}});save();next()};
+    L.vocab.forEach(w=>{const i=CONTENT.vocab.findIndex(v=>v[0].toLowerCase()===w[0].toLowerCase());if(i>=0&&!S.cards[i])S.cards[i]={box:1,due:dayNum()+1}});save();next()};
 }
 function lsGrammar(el,next){
   const G=LR.L.grammar;let i=0;
@@ -298,12 +302,23 @@ function lsTest(el,next){
   el.innerHTML=`<div class="card"><h2>Mini-Test</h2><p>5 Fragen. Du siehst die Lösungen erst am Ende.</p><button class="p" id="go">Start</button></div>`;
   $("#go").onclick=()=>runItems(el,LR.L.test,next,"Mini-Test",true);
 }
+function lsRead(el,next){
+  const R=LR.L.reading;
+  el.innerHTML=`<div class="card"><h2>Lesen</h2><div class="passage">${esc(R.text)}</div><div class="row"><button id="pl">🔊 Text anhören</button></div><p class="mute">Lies den Text. Dann beantworte die Fragen.</p><button class="p" id="go">Zu den Fragen</button></div>`;
+  $("#pl").onclick=()=>say(R.text);$("#go").onclick=()=>runItems(el,R.qs.map(q=>Object.assign({},q,{ctx:R.text})),next,"Lesen");
+}
+function lsWrite(el,next){
+  const L=LR.L;
+  el.innerHTML=`<div class="card"><h2>Schreiben ✍️</h2><p>${esc(L.writing)}</p><textarea id="t" placeholder="Schreib hier…"></textarea>
+  <p class="mute">Prüfe: Beginnt jeder Satz groß? Steht das Verb auf Position 2? Passen die Verbformen (ich … / du … / er … )?</p><button class="p" id="d">Fertig</button></div>`;
+  $("#d").onclick=()=>{const v=$("#t").value.trim();if(v){S.notes=S.notes||{};S.notes["L"+L.id+"-"+dayNum()]=v;save()}next()};
+}
 function runItems(el,items,done,title,quiet){
   let i=0;
   (function show(){
     if(i>=items.length)return done();
     const it=items[i],adv=()=>{i++;show()};
-    el.innerHTML=`<div class="card"><div class="mute">${title} · ${i+1}/${items.length}</div><p class="big" style="font-size:20px">${esc(it.q)}</p>${it.en?`<div class="en">${esc(it.en)}</div>`:""}<div id="ex"></div><div id="fb" style="margin:10px 0"></div><div id="act"></div></div>`;
+    el.innerHTML=`<div class="card"><div class="mute">${title} · ${i+1}/${items.length}</div>${it.ctx?`<div class="passage">${esc(it.ctx)}</div>`:""}<p class="big" style="font-size:20px">${esc(it.q)}</p>${it.en?`<div class="en">${esc(it.en)}</div>`:""}<div id="ex"></div><div id="fb" style="margin:10px 0"></div><div id="act"></div></div>`;
     const ex=$("#ex"),fb=$("#fb"),act=$("#act");
     const finish=(ok,given,correct)=>{
       rec(it.tag,ok,it.q+(it.words?" ("+it.words.join(" ")+")":""),given,correct);if(quiet&&title==="Mini-Test")LR.test.push(ok);
@@ -325,7 +340,12 @@ function runItems(el,items,done,title,quiet){
           if(b.dataset.s==="b"){const c=bank.find(x=>x.j===j);bank=bank.filter(x=>x.j!==j);chosen.push(c)}else{const c=chosen.find(x=>x.j===j);chosen=chosen.filter(x=>x.j!==j);bank.push(c)}draw()});
       };
       draw();act.innerHTML=`<button class="p" id="ck">Prüfen</button>`;
-      $("#ck").onclick=()=>{if(chosen.length<it.words.length)return;const g=chosen.map(c=>c.w).join(" "),c=it.words.join(" ");ex.querySelectorAll(".chip").forEach(b=>b.disabled=true);finish(g===c,g,c+(it.q.includes("Frage")?"?":"."))};
+      $("#ck").onclick=()=>{if(chosen.length<it.words.length)return;const g=chosen.map(c=>c.w).join(" "),c=it.words.join(" ");ex.querySelectorAll(".chip").forEach(b=>b.disabled=true);finish(g===c,g,c+(it.suffix!==undefined?it.suffix:it.q.includes("Frage")?"?":"."))};
+    }else if(it.t==="free"){
+      ex.innerHTML=`<input id="ti" autocomplete="off" spellcheck="false" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">`;
+      const inp=$("#ti");inp.focus();act.innerHTML=`<button class="p" id="ck">Prüfen</button>`;
+      const go=()=>{if(!inp.value.trim())return;inp.disabled=true;finish(new RegExp(it.re).test(norm(inp.value)),inp.value.trim(),it.model)};
+      $("#ck").onclick=go;inp.onkeydown=e=>{if(e.key==="Enter")go()};
     }else if(it.t==="type"){
       ex.innerHTML=`<input id="ti" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">`;
       const inp=$("#ti");inp.focus();act.innerHTML=`<button class="p" id="ck">Prüfen</button>`;
@@ -334,8 +354,9 @@ function runItems(el,items,done,title,quiet){
     }
   })();
 }
-function lsSpeak(el,next){
+function lsSpeak(el,next,skip){
   const SP=LR.L.speaking,SR=window.SpeechRecognition||window.webkitSpeechRecognition;let i=0;
+  if(SP.task&&!skip){el.innerHTML=`<div class="card"><h2>Sprechen 🗣️</h2><p>${esc(SP.task)}</p><p class="mute">Gleich übst du das mit Lena. Antworte mit ganzen Sätzen.</p><button class="p" id="go">Los</button></div>`;return void($("#go").onclick=()=>lsSpeak(el,next,true))}
   (function show(){
     if(i>=SP.steps.length)return next();
     const st=SP.steps[i];let tried=false;
@@ -344,7 +365,7 @@ function lsSpeak(el,next){
     <p class="mute">Antworte mit einem ganzen Satz${SR?" (Mikrofon oder Tastatur)":""}.</p>
     <input id="ti" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">
     <div class="row" style="margin:10px 0">${SR?`<button id="mic">🎤 Sprechen</button>`:""}<button class="p" id="sd">Senden</button></div><div id="fb"></div></div>`;
-    say(st.q);$("#rp").onclick=()=>say(st.q);
+    say(st.spoken||st.q);$("#rp").onclick=()=>say(st.spoken||st.q);
     if(SR)$("#mic").onclick=()=>{const bad=()=>{$("#fb").innerHTML=`<span class="mute">Mikrofon nicht verfügbar. Bitte tippe deine Antwort.</span>`};try{const r=new SR();r.lang="de-DE";r.interimResults=false;r.onresult=e=>{$("#ti").value=e.results[0][0].transcript};r.onerror=bad;r.start()}catch(e){bad()}};
     const send=()=>{
       const v=$("#ti").value.trim();if(!v)return;
@@ -358,7 +379,7 @@ function lsSpeak(el,next){
   })();
 }
 function lsFeedback(el){
-  const L=LR.L,log=LR.log,tags={};
+  const L=LR.L,log=LR.log,tags={},TI=Object.assign({},CONTENT.tagInfoCommon||{},L.tagInfo);
   log.forEach(x=>{(tags[x.tag]=tags[x.tag]||{n:0,ok:0});tags[x.tag].n++;if(x.ok)tags[x.tag].ok++});
   const total=log.length,right=log.filter(x=>x.ok).length,pct=Math.round(right/total*100);
   const tn=LR.test.length,tr=LR.test.filter(Boolean).length,pass=tr>=4&&pct>=70;
@@ -368,12 +389,13 @@ function lsFeedback(el){
   S.lessons[L.id]={best:Math.max(pct,prev?prev.best:0),last:pct,date:dayNum()};save();
   const miss=log.filter(x=>!x.ok);
   el.innerHTML=`<div class="card"><h2>${pass?"Bestanden! 🎉":"Noch nicht ganz."}</h2><p>Mini-Test: <b>${tr}/${tn}</b> · Gesamt: <b>${pct}%</b>${prev?` <span class="mute">(vorher: ${prev.last}%)</span>`:""}</p>
-  <p class="mute">${pass?"Du kannst dich vorstellen. Wiederhole die Wörter morgen im Review.":"Wiederhole die Lektion morgen. Ziel: mindestens 4/5 im Test."}</p></div>
+  <p class="mute">${pass?"Gut gemacht! Wiederhole die Wörter morgen im Review.":"Wiederhole die Lektion morgen. Ziel: mindestens 4/5 im Test."}</p></div>
   <div class="card"><h2>Dein Feedback</h2>
-  ${arr.map(x=>`<div style="margin:8px 0"><div class="row space"><span>${esc(L.tagInfo[x.t].name)}</span><span class="mute">${x.ok}/${x.n}</span></div><div class="bar"><i style="width:${x.p}%"></i></div></div>`).join("")}
-  ${strong.length?`<p><b>Stark:</b> ${strong.map(x=>esc(L.tagInfo[x.t].name)).join(", ")}.</p>`:""}
-  ${weak.length?`<p><b>Üben:</b></p>${weak.map(x=>`<p>• <b>${esc(L.tagInfo[x.t].name)}:</b> ${esc(L.tagInfo[x.t].tip)}</p>`).join("")}`:`<p>Keine Schwächen gefunden. Weiter so!</p>`}</div>
+  ${arr.map(x=>`<div style="margin:8px 0"><div class="row space"><span>${esc(TI[x.t].name)}</span><span class="mute">${x.ok}/${x.n}</span></div><div class="bar"><i style="width:${x.p}%"></i></div></div>`).join("")}
+  ${strong.length?`<p><b>Stark:</b> ${strong.map(x=>esc(TI[x.t].name)).join(", ")}.</p>`:""}
+  ${weak.length?`<p><b>Üben:</b></p>${weak.map(x=>`<p>• <b>${esc(TI[x.t].name)}:</b> ${esc(TI[x.t].tip)}</p>`).join("")}`:`<p>Keine Schwächen gefunden. Weiter so!</p>`}</div>
   ${miss.length?`<div class="card"><h2>Deine Fehler</h2>${miss.map(x=>`<p class="mute">${esc(x.q)}<br>Du: ${esc(x.given)} → Richtig: <b>${esc(x.correct)}</b></p>`).join("")}<p class="mute">Gespeichert in der Fehlerbank.</p></div>`:""}
+  ${L.review?`<div class="card"><h2>Wiederholung</h2><p>${esc(L.review)}</p></div>`:""}
   <div class="row"><button class="p" onclick="home()">Fertig</button><button onclick="startLesson('${L.id}')">Lektion wiederholen</button></div>`;
 }
 if("speechSynthesis" in window)speechSynthesis.getVoices();

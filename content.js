@@ -1,4 +1,11 @@
 // All learning content lives here. Add more entries to grow the app; no other code changes needed.
+// Small builders used by the lesson definitions below.
+const _mc=(tag,q,opts,a,o)=>Object.assign({t:"mcq",tag,q,opts,a},o);
+const _tf=(tag,q,a,o)=>_mc(tag,"Richtig oder falsch? "+q,["Richtig","Falsch"],a,o);
+const _ty=(tag,q,a,o)=>Object.assign({t:"type",tag,q,a:[].concat(a)},o);
+const _bd=(tag,q,words,o)=>Object.assign({t:"build",tag,q,words},o);
+const _fr=(tag,q,re,model,o)=>Object.assign({t:"free",tag,q,re,model},o);
+const _ls=(tag,say,q,opts,a)=>({t:"listen",tag,say,q,opts,a});
 const CONTENT = {
   // [German, English, Example sentence]
   vocab: [
@@ -321,7 +328,22 @@ const CONTENT = {
     ["das Konzert","concert","Das Konzert beginnt um acht.","freizeit"],
     ["der Spaziergang","walk","Wir machen einen Spaziergang.","freizeit"],
     ["gern","gladly / like to","Ich lerne gern Deutsch.","freizeit"],
-    ["die Freizeit","free time","Was machst du in der Freizeit?","freizeit"]
+    ["die Freizeit","free time","Was machst du in der Freizeit?","freizeit"],
+    // --- words from Lektion 01-04 (4th field empty = no theme) ---
+    ["hallo","hello","Hallo! Wie geht es dir?",null,"lektion"],
+    ["guten Tag","hello (daytime)","Guten Tag!",null,"lektion"],
+    ["guten Abend","good evening","Guten Abend, Herr Müller!",null,"lektion"],
+    ["sein","to be","Ich bin Lina.",null,"lektion"],
+    ["Deutsch","German","Ich lerne Deutsch.",null,"lektion"],
+    ["Englisch","English","Ich spreche Englisch.",null,"lektion"],
+    ["wo","where","Wo wohnst du?",null,"lektion"],
+    ["woher","where from","Woher kommst du?",null,"lektion"],
+    ["die Zahl","number","Die Zahl ist 15.",null,"lektion"],
+    ["das Alter","age","Wie ist dein Alter?",null,"lektion"],
+    ["die Nummer","number (phone, house)","Wie ist deine Nummer?",null,"lektion"],
+    ["die Ziffer","digit","Die Nummer hat zehn Ziffern.",null,"lektion"],
+    ["wiederholen","to repeat","Kannst du das bitte wiederholen?",null,"lektion"],
+    ["die Geschwister","siblings","Meine Geschwister sind nett.",null,"lektion"]
   ],
 
   themes: [
@@ -561,8 +583,320 @@ const CONTENT = {
   ],
 
   // Full guided lessons. Instructions are German-first; "en" fields are shown only when the learner taps "English".
-  lessons: [{
-    id: "01", title: "Sich vorstellen", minutes: 12,
+  lessons: [
+  // ---------- Lektion 01 ----------
+  {
+    id: "01", title: "Hallo! Ich heiße …", level: "A0", minutes: 14, docOrder: true,
+    goals: ["Du kannst andere Personen begrüßen und dich verabschieden.","Du kannst deinen Namen sagen und nach dem Namen fragen.","Du kannst einfache Sätze mit „sein“ und „heißen“ bilden."],
+    goalEn: "You can greet people, say goodbye, say and ask names, and make simple sentences with 'sein' and 'heißen'.",
+    vocab: [
+      ["hallo","","hello","Hallo! Wie geht es dir?","[ˈhaloː]"],
+      ["guten Morgen","","good morning","Guten Morgen, Anna!","[ˈɡuːtn̩ ˈmɔʁɡn̩]"],
+      ["guten Tag","","hello (daytime)","Guten Tag!","[ˈɡuːtn̩ ˈtaːk]"],
+      ["guten Abend","","good evening","Guten Abend, Herr Müller!","[ˈɡuːtn̩ ˈaːbn̩t]"],
+      ["tschüss","","bye","Tschüss, bis morgen!","[tʃʏs]"],
+      ["auf Wiedersehen","","goodbye (formal)","Auf Wiedersehen!","[aʊf ˈviːdɐzeːən]"],
+      ["der Name","-n","name","Mein Name ist Sara.","[ˈnaːmə]"],
+      ["heißen","","to be called","Ich heiße Omar.","[ˈhaɪ̯sn̩]"],
+      ["sein","","to be","Ich bin Lina.","[zaɪ̯n]"],
+      ["bitte","","please / you're welcome","Wie bitte?","[ˈbɪtə]"]
+    ],
+    grammar: [
+      {title:"Sich vorstellen",de:"Ich heiße Sara. / Ich bin Sara. / Mein Name ist Sara.",en:"Three ways to say your name."},
+      {title:"Das Verb „heißen“",de:"ich heiße · du heißt · er/sie heißt<br><i>Wie heißt du? – Ich heiße Lina.</i>",en:"'heißen' = to be called. The ending changes with the person."},
+      {title:"Das Verb „sein“",de:"ich bin · du bist · er/sie ist<br><i>Ich bin Omar. Du bist Anna.</i>",en:"'sein' = to be. It is irregular, so learn it by heart."}
+    ],
+    listening: {
+      names: ["Lina","Omar"],
+      lines: [[0,"Hallo!"],[1,"Hallo! Ich heiße Omar. Wie heißt du?"],[0,"Ich heiße Lina."],[1,"Schön, dich kennenzulernen!"],[0,"Freut mich. Tschüss, Omar!"],[1,"Auf Wiedersehen, Lina!"]],
+      qs: [
+        _mc("hoer","Wie heißt der Mann?",["Omar","Lina","Ali"],0),
+        _mc("hoer","Wie heißt die Frau?",["Lina","Omar","Sara"],0),
+        _mc("hoer","Wie verabschiedet sich Omar?",["Auf Wiedersehen, Lina!","Guten Morgen, Lina!","Hallo, Lina!"],0)
+      ]
+    },
+    reading: {
+      text: "Hallo! Ich heiße Lina. Ich bin neu hier. Das ist Omar. Er ist nett. Wir sagen: „Hallo!“",
+      qs: [_tf("lesen","Lina ist neu hier.",0),_tf("lesen","Omar ist nicht nett.",1),_tf("lesen","Die Frau heißt Omar.",1)]
+    },
+    writing: "Schreibe drei bis fünf Sätze über dich. Benutze: Hallo! Ich heiße … / Ich bin … / Mein Name ist … / Tschüss!",
+    speaking: {
+      task: "Du bist neu in einem Deutschkurs. Begrüße eine Person. Sage deinen Namen und frage nach dem Namen. Verabschiede dich.",
+      scene: "Im Deutschkurs triffst du Lena.",
+      steps: [
+        {q:"Hallo!",re:"(hallo|guten (morgen|tag|abend))",model:"Hallo!",tip:"Begrüße Lena: Hallo! oder Guten Tag!",tag:"greet"},
+        {q:"Ich heiße Lena. Wie heißt du?",re:"(ich heisse|ich bin|mein name ist) \\S+",model:"Ich heiße Anna.",tip:"Sage: Ich heiße … oder Ich bin …",tag:"verb"},
+        {q:"Schön, dich kennenzulernen! Tschüss!",re:"(tschuess|auf wiedersehen)",model:"Tschüss, Lena!",tip:"Verabschiede dich: Tschüss! oder Auf Wiedersehen!",tag:"greet"}
+      ]
+    },
+    exercises: [
+      _mc("greet","Es ist 08:00 Uhr. Was passt?",["Guten Morgen","Guten Abend"],0),
+      _mc("verb","Ich ___ Lina.",["heiße","heißt"],0),
+      _mc("sein","Du ___ Omar.",["bin","bist"],1),
+      _bd("verb","Bilde die Frage.",["Wie","heißt","du"]),
+      _tf("sein","„Ich bist Sara.“",1),
+      _fr("verb","Wie heißt du? Schreibe einen ganzen Satz.","(ich heisse|ich bin|mein name ist) \\S+","Ich heiße Alex.")
+    ],
+    test: [
+      _mc("greet","Es ist 20:00 Uhr. Was passt?",["Guten Abend","Guten Morgen","Guten Tag"],0),
+      _mc("verb","Wie ___ du?",["heißt","heiße","heißen"],0),
+      _ty("sein","Ich ___ Omar. (sein)","bin"),
+      _bd("verb","Bilde den Satz.",["Mein","Name","ist","Sara"]),
+      _mc("greet","Du gehst weg. Was sagst du?",["Tschüss!","Hallo!","Guten Morgen!"],0)
+    ],
+    review: "Ohne Hilfe: Begrüße eine Person, sage deinen Namen, frage nach ihrem Namen und verabschiede dich.",
+    tagInfo: {
+      greet: {name:"Begrüßen und Verabschieden",tip:"Merke: Guten Morgen / Guten Tag / Guten Abend – Tschüss / Auf Wiedersehen."},
+      verb: {name:"heißen",tip:"ich heiße · du heißt · er/sie heißt. Wie heißt du?"},
+      sein: {name:"sein",tip:"ich bin · du bist · er/sie ist."}
+    }
+  },
+  // ---------- Lektion 02 ----------
+  {
+    id: "02", title: "Wie heißt du? Woher kommst du?", level: "A0", minutes: 15, docOrder: true,
+    goals: ["Du kannst nach dem Namen und dem Herkunftsland fragen.","Du kannst sagen, woher du kommst und wo du wohnst.","Du kannst einfache Fragen mit „wie“, „wo“ und „woher“ stellen."],
+    goalEn: "You can ask for a name and country, say where you come from and live, and ask simple questions with wie, wo and woher.",
+    vocab: [
+      ["kommen","","to come","Ich komme aus Pakistan.","[ˈkɔmən]"],
+      ["wohnen","","to live (reside)","Ich wohne in München.","[ˈvoːnən]"],
+      ["die Stadt","Städte","city","München ist eine Stadt.","[ʃtat]"],
+      ["das Land","Länder","country","Pakistan ist ein Land.","[lant]"],
+      ["die Sprache","-n","language","Deutsch ist eine Sprache.","[ˈʃpʁaːxə]"],
+      ["Deutsch","","German","Ich lerne Deutsch.","[dɔɪ̯tʃ]"],
+      ["Englisch","","English","Ich spreche Englisch.","[ˈɛŋlɪʃ]"],
+      ["wo","","where","Wo wohnst du?","[voː]"],
+      ["woher","","where from","Woher kommst du?","[voˈheːɐ̯]"],
+      ["sprechen","","to speak","Ich spreche Urdu.","[ˈʃpʁɛçən]"]
+    ],
+    grammar: [
+      {title:"Fragen mit Fragewort",de:"Das Fragewort steht am Anfang. Danach kommt das Verb:<br><i>Woher kommst du? Wo wohnst du? Wie heißt du?</i>",en:"The question word comes first, the verb second."},
+      {title:"„kommen“ und „wohnen“",de:"ich komme / du kommst / er kommt<br>ich wohne / du wohnst / sie wohnt",en:"Regular verbs: stem + -e, -st, -t."},
+      {title:"„aus“ und „in“",de:"Ich komme <b>aus</b> Pakistan. Ich wohne <b>in</b> München.<br>„Aus“ zeigt das Herkunftsland. „In“ zeigt den Wohnort.",en:"'aus' = from (country of origin). 'in' = in (where you live)."}
+    ],
+    listening: {
+      names: ["Mia","Amir"],
+      lines: [[0,"Hallo! Wie heißt du?"],[1,"Ich heiße Amir. Und du?"],[0,"Ich heiße Mia. Woher kommst du?"],[1,"Ich komme aus Pakistan. Wo wohnst du?"],[0,"Ich wohne in München."],[1,"Sprichst du Deutsch?"],[0,"Ja, ich spreche ein bisschen Deutsch."]],
+      qs: [
+        _mc("hoer","Woher kommt Amir?",["Aus Pakistan","Aus München","Aus Spanien"],0),
+        _mc("hoer","Wo wohnt Mia?",["In München","In Pakistan","In Berlin"],0),
+        _mc("hoer","Spricht Mia Deutsch?",["Ja, ein bisschen.","Nein.","Nur Englisch."],0)
+      ]
+    },
+    reading: {
+      text: "Hallo! Ich heiße Amir. Ich komme aus Pakistan und wohne in München. Ich spreche Urdu und Englisch. Jetzt lerne ich Deutsch. Deutsch ist interessant!",
+      qs: [_tf("lesen","Amir wohnt in München.",0),_tf("lesen","Amir spricht Deutsch und Englisch.",1),_tf("lesen","Amir lernt jetzt Deutsch.",0)]
+    },
+    writing: "Schreibe vier bis sechs Sätze über dich. Benutze: Ich heiße … / Ich komme aus … / Ich wohne in … / Ich spreche … / Ich lerne Deutsch.",
+    speaking: {
+      task: "Du lernst eine neue Person kennen. Frage nach dem Namen, dem Herkunftsland, dem Wohnort und den Sprachen. Antworte auch auf diese Fragen.",
+      scene: "Du lernst Lena kennen.",
+      steps: [
+        {q:"Hallo! Woher kommst du?",re:"ich komme aus \\S+",model:"Ich komme aus Pakistan.",tip:"Sage: Ich komme aus + Land.",tag:"praep"},
+        {q:"Und wo wohnst du?",re:"ich wohne in \\S+",model:"Ich wohne in München.",tip:"Sage: Ich wohne in + Stadt.",tag:"praep"},
+        {q:"Welche Sprachen sprichst du?",re:"ich spreche \\S+",model:"Ich spreche Urdu und Englisch.",tip:"Sage: Ich spreche + Sprache.",tag:"verb"}
+      ]
+    },
+    exercises: [
+      _mc("verb","Ich ___ aus Spanien.",["komme","kommst"],0),
+      _mc("verb","Wo ___ du?",["wohne","wohnst"],1),
+      _mc("frage","___ kommst du? – Ich komme aus Italien.",["Woher","Wo"],0),
+      _bd("frage","Bilde die Frage.",["Wo","wohnst","du"]),
+      _mc("praep","Ich wohne ___ Berlin.",["in","aus"],0),
+      _fr("verb","Welche Sprachen sprichst du?","ich spreche \\S+","Ich spreche Urdu und Englisch."),
+      _tf("frage","„Woher wohnst du?“",1)
+    ],
+    test: [
+      _mc("praep","Ich komme ___ Pakistan.",["aus","in"],0),
+      _mc("verb","Er ___ in Berlin. (wohnen)",["wohnt","wohnst","wohne"],0),
+      _bd("frage","Bilde die Frage.",["Woher","kommst","du"]),
+      _ty("verb","Ich ___ Deutsch. (lernen)","lerne"),
+      _mc("frage","___ wohnst du? – In München.",["Wo","Woher"],0)
+    ],
+    review: "Sage deinen Namen, dein Herkunftsland, deinen Wohnort und eine Sprache. Stelle danach einer anderen Person zwei Fragen.",
+    tagInfo: {
+      frage: {name:"Fragen mit Fragewort",tip:"Das Fragewort steht am Anfang, dann das Verb: Woher kommst du? Wo wohnst du?"},
+      verb: {name:"kommen, wohnen, sprechen",tip:"ich komme · du kommst · er kommt / ich wohne · du wohnst · er wohnt."},
+      praep: {name:"aus und in",tip:"aus + Herkunftsland. in + Wohnort."}
+    }
+  },
+  // ---------- Lektion 03 ----------
+  {
+    id: "03", title: "Zahlen, Alter und Telefonnummer", level: "A0 → A1", minutes: 18, docOrder: true,
+    goals: ["Du kannst Zahlen von 0 bis 20 verstehen und sagen.","Du kannst dein Alter nennen und nach dem Alter fragen.","Du kannst Zahlen von 21 bis 100 verstehen.","Du kannst eine Telefonnummer nennen und nachfragen."],
+    goalEn: "You can understand and say numbers up to 100, give and ask for age, and say a phone number and ask for it to be repeated.",
+    vocab: [
+      ["die Zahl","-en","number","Die Zahl ist 15.","[tsaːl]"],
+      ["das Alter","","age","Wie ist dein Alter?","[ˈaltɐ]"],
+      ["das Jahr","-e","year","Ich bin 29 Jahre alt.","[jaːɐ̯]"],
+      ["alt","","old","Wie alt bist du?","[alt]"],
+      ["die Telefonnummer","-n","phone number","Meine Telefonnummer ist 0176 123456.","[ˈteːləfoːnˌnʊmɐ]"],
+      ["die Nummer","-n","number (phone, house)","Wie ist deine Nummer?","[ˈnʊmɐ]"],
+      ["die Ziffer","-n","digit","Die Nummer hat zehn Ziffern.","[ˈtsɪfɐ]"],
+      ["wiederholen","","to repeat","Kannst du das bitte wiederholen?","[ˌviːdɐˈhoːlən]"]
+    ],
+    grammar: [
+      {title:"Zahlen 0–20 und die Zehner",de:"0 null · 1 eins · 2 zwei · 3 drei · 4 vier · 5 fünf · 6 sechs · 7 sieben · 8 acht · 9 neun · 10 zehn<br>11 elf · 12 zwölf · 13 dreizehn · 14 vierzehn · 15 fünfzehn · 16 sechzehn · 17 siebzehn · 18 achtzehn · 19 neunzehn · 20 zwanzig<br>30 dreißig · 40 vierzig · 50 fünfzig · 60 sechzig · 70 siebzig · 80 achtzig · 90 neunzig · 100 hundert",en:"Careful: 16 sechzehn vs 60 sechzig, 17 siebzehn vs 70 siebzig. -zehn = 10+, -zig = tens. (This card was added to the booklet.)"},
+      {title:"Nach dem Alter fragen",de:"Wie alt bist du? – Ich bin 29 Jahre alt. Kurz: Ich bin 29.",en:"Ask: Wie alt bist du? Answer: Ich bin … Jahre alt."},
+      {title:"Nach einer Telefonnummer fragen",de:"Wie ist deine Telefonnummer? – Meine Telefonnummer ist 0176 123456.",en:"Say phone numbers digit by digit."},
+      {title:"Um Wiederholung bitten",de:"Wie bitte? / Noch einmal, bitte. / Kannst du das bitte wiederholen?",en:"Three ways to ask someone to repeat."},
+      {title:"Zahlen bilden",de:"21 = einundzwanzig. Bei Zahlen von 21 bis 99 steht zuerst die Einerzahl, dann „und“, dann die Zehnerzahl: 35 = fünfunddreißig.",en:"In German the ones come first: 35 = five-and-thirty."}
+    ],
+    listening: {
+      names: ["Lina","Omar"],
+      lines: [[0,"Hallo, Omar! Wie alt bist du?"],[1,"Ich bin 24 Jahre alt. Und du?"],[0,"Ich bin 27 Jahre alt."],[1,"Wie ist deine Telefonnummer?"],
+        [0,"Meine Nummer ist 0176 28 41 90 35.","Meine Nummer ist null eins sieben sechs, zwei acht, vier eins, neun null, drei fünf."],
+        [1,"Entschuldigung, kannst du die Nummer bitte wiederholen?"],[0,"Ja, natürlich. Null eins sieben sechs, zwei acht, vier eins, neun null, drei fünf."],[1,"Danke!"],[0,"Bitte!"]],
+      qs: [
+        _mc("hoer","Wie alt ist Omar?",["24","27","42"],0),
+        _mc("hoer","Wie alt ist Lina?",["27","24","17"],0),
+        _mc("hoer","Worum bittet Omar?",["Lina soll die Nummer wiederholen.","Lina soll weggehen.","Lina soll anrufen."],0),
+        _ls("zahlen","siebzehn","Welche Zahl hörst du?",["17","70","7"],0),
+        _ls("zahlen","sechzig","Welche Zahl hörst du?",["16","60","6"],1)
+      ]
+    },
+    reading: {
+      text: "Hallo! Ich heiße Omar. Ich komme aus Pakistan und wohne in München. Ich bin 24 Jahre alt. Ich lerne Deutsch. Mein Deutschkurs beginnt um neun Uhr. Meine Telefonnummer ist 0176 28 41 90 35. Ich schreibe die Nummer in mein Handy.",
+      qs: [_tf("lesen","Omar ist 24 Jahre alt.",0),_tf("lesen","Der Deutschkurs beginnt um zehn Uhr.",1),_tf("lesen","Omar schreibt die Nummer in sein Handy.",0)]
+    },
+    writing: "Schreibe fünf Sätze über dich: Hallo! Ich heiße … / Ich komme aus … / Ich wohne in … / Ich bin … Jahre alt. / Meine Telefonnummer ist … Schreibe die Telefonnummer auch mit Wörtern.",
+    speaking: {
+      task: "Du bist in einem Deutschkurs und lernst eine neue Person kennen. Frage nach dem Namen, dem Herkunftsland, dem Wohnort, dem Alter und der Telefonnummer. Bitte die Person, die Telefonnummer zu wiederholen.",
+      scene: "Du lernst Lena im Deutschkurs kennen.",
+      steps: [
+        {q:"Wie alt bist du?",re:"ich bin \\S+( jahre( alt)?)?",model:"Ich bin 29 Jahre alt.",tip:"Sage: Ich bin + Zahl + Jahre alt.",tag:"alter"},
+        {q:"Wie ist deine Telefonnummer?",re:"(nummer ist|\\d{3,}|null )",model:"Meine Telefonnummer ist 0176 123456.",tip:"Sage: Meine Telefonnummer ist … Sprich die Ziffern einzeln.",tag:"nummer"},
+        {q:"Meine Nummer ist 0176 28 41 90 35. Bitte wiederhole die Nummer.",spoken:"Meine Nummer ist null eins sieben sechs, zwei acht, vier eins, neun null, drei fünf. Bitte wiederhole die Nummer.",re:"(0176|null eins sieben sechs)",model:"Null eins sieben sechs, zwei acht, vier eins, neun null, drei fünf.",tip:"Wiederhole die Ziffern: null eins sieben sechs …",tag:"nummer"}
+      ]
+    },
+    exercises: [
+      _ty("zahlen","Schreibe als Ziffer: dreizehn","13"),
+      _ty("zahlen","Schreibe als Ziffer: sechzehn","16"),
+      _ty("zahlen","Schreibe als Ziffer: siebzig","70"),
+      _ty("zahlen","Schreibe als Ziffer: neunundzwanzig","29"),
+      _ty("zahlen","Schreibe als Ziffer: vierunddreißig","34"),
+      _ty("alter","Wie ___ bist du?","alt"),
+      _ty("alter","Ich bin 29 ___ alt.","Jahre"),
+      _ty("nummer","Meine Telefonnummer ___ 0176 123456.","ist"),
+      _ty("bitte","Kannst du das bitte ___?","wiederholen"),
+      _bd("nummer","Ordne das Gespräch.",["Hallo! Wie alt bist du?","Ich bin 24 Jahre alt.","Wie ist deine Telefonnummer?","Meine Telefonnummer ist 0176 123456.","Danke!"],{suffix:""}),
+      _ty("zahlen","Schreibe als Wort: 11","elf"),
+      _ty("zahlen","Schreibe als Wort: 18","achtzehn"),
+      _ty("zahlen","Schreibe als Wort: 24","vierundzwanzig"),
+      _ty("zahlen","Schreibe als Wort: 37","siebenunddreißig"),
+      _ty("zahlen","Schreibe als Wort: 60","sechzig"),
+      _mc("alter","Welcher Satz ist richtig?",["Ich bin 29 Jahre alt.","Ich bin 29 Jahr alt."],0),
+      _mc("alter","Welcher Satz ist richtig?",["Wie alt bist du?","Wie alt du bist?"],0),
+      _mc("nummer","Welcher Satz ist richtig?",["Meine Telefonnummer ist 0176 123456.","Meine Telefonnummer sein 0176 123456."],0),
+      _mc("alter","Wie alt ist Sara?",["31","13","30"],0,{ctx:"Sara ist 31 Jahre alt. Sie kommt aus Spanien und wohnt in München."}),
+      _mc("hoer","Woher kommt Sara?",["Aus Spanien","Aus München","Aus Italien"],0,{ctx:"Sara ist 31 Jahre alt. Sie kommt aus Spanien und wohnt in München."}),
+      _mc("hoer","Wo wohnt Sara?",["In München","In Spanien","In Berlin"],0,{ctx:"Sara ist 31 Jahre alt. Sie kommt aus Spanien und wohnt in München."})
+    ],
+    test: [
+      _ty("zahlen","Schreibe als Ziffer: einundzwanzig","21"),
+      _mc("alter","Wie ___ bist du?",["alt","Alter","Jahre"],0),
+      _ty("zahlen","Schreibe als Wort: 15","fünfzehn"),
+      _ls("zahlen","siebzehn","Welche Zahl hörst du?",["17","70","7"],0),
+      _mc("bitte","Du verstehst die Nummer nicht. Was sagst du?",["Noch einmal, bitte.","Danke schön.","Guten Morgen."],0)
+    ],
+    review: "Zähle von 0 bis 20. Sage drei Zahlen zwischen 21 und 100. Sage dein Alter und eine Telefonnummer langsam und deutlich.",
+    tagInfo: {
+      zahlen: {name:"Zahlen",tip:"Übe 13/30, 16/60, 17/70: -zehn (13–19) und -zig (Zehner). Bei 21–99 zuerst die Einerzahl."},
+      alter: {name:"Alter",tip:"Wie alt bist du? – Ich bin … Jahre alt."},
+      nummer: {name:"Telefonnummer",tip:"Sage die Ziffern einzeln: null eins sieben sechs …"},
+      bitte: {name:"Um Wiederholung bitten",tip:"Wie bitte? / Noch einmal, bitte. / Kannst du das bitte wiederholen?"}
+    }
+  },
+  // ---------- Lektion 04 ----------
+  {
+    id: "04", title: "Meine Familie", level: "A0 → A1", minutes: 18, docOrder: true,
+    goals: ["Du kannst wichtige Familienmitglieder benennen.","Du kannst eine Person vorstellen.","Du kannst sagen, wer auf einem Familienfoto zu sehen ist.","Du kannst „mein“, „meine“, „er heißt“ und „sie heißt“ in einfachen Sätzen verwenden."],
+    goalEn: "You can name family members, introduce a person, say who is in a family photo, and use mein/meine and er/sie heißt.",
+    vocab: [
+      ["die Familie","-n","family","Meine Familie ist groß.","[faˈmiːli̯ə]"],
+      ["die Mutter","Mütter","mother","Das ist meine Mutter.","[ˈmʊtɐ]"],
+      ["der Vater","Väter","father","Das ist mein Vater.","[ˈfaːtɐ]"],
+      ["die Schwester","-n","sister","Meine Schwester wohnt in Berlin.","[ˈʃvɛstɐ]"],
+      ["der Bruder","Brüder","brother","Mein Bruder heißt Ali.","[ˈbʁuːdɐ]"],
+      ["die Eltern","(Plural)","parents","Meine Eltern wohnen in Pakistan.","[ˈɛltɐn]"],
+      ["das Kind","-er","child","Das Kind ist fünf Jahre alt.","[kɪnt]"],
+      ["der Sohn","Söhne","son","Ihr Sohn heißt Adam.","[zoːn]"],
+      ["die Tochter","Töchter","daughter","Ihre Tochter ist zehn Jahre alt.","[ˈtɔxtɐ]"],
+      ["die Geschwister","(Plural)","siblings","Meine Geschwister sind nett.","[ɡəˈʃvɪstɐ]"]
+    ],
+    grammar: [
+      {title:"„mein“ und „meine“",de:"der Vater → <b>mein</b> Vater · das Kind → <b>mein</b> Kind<br>die Mutter → <b>meine</b> Mutter · die Schwester → <b>meine</b> Schwester<br>Im Plural: <b>meine</b> Eltern, <b>meine</b> Geschwister",en:"der/das nouns take 'mein'. die nouns and plurals take 'meine'."},
+      {title:"„Das ist“ und „Das sind“",de:"Eine Person: Das ist mein Vater.<br>Mehrere Personen: Das sind meine Eltern.",en:"One person: ist. More than one: sind."},
+      {title:"„Er heißt“, „Sie heißt“ und „Sie heißen“",de:"Ein Mann: Er heißt Ali.<br>Eine Frau: Sie heißt Sara.<br>Mehrere Personen: Sie heißen Amina und Ahmed.",en:"er = he, sie = she, sie (plural) = they."}
+    ],
+    listening: {
+      names: ["Sara","Lina"],
+      lines: [[0,"Schau mal! Das ist ein Foto von meiner Familie."],[1,"Schön! Wer ist das?"],[0,"Das ist meine Mutter. Sie heißt Amina."],[1,"Und wer ist das?"],[0,"Das ist mein Vater. Er heißt Ahmed."],[1,"Hast du Geschwister?"],[0,"Ja. Das sind meine Schwester und mein Bruder."],[1,"Wie heißt dein Bruder?"],[0,"Er heißt Ali."],[1,"Deine Familie ist sehr nett!"],[0,"Danke!"]],
+      qs: [
+        _mc("hoer","Wie heißt Saras Mutter?",["Amina","Ahmed","Ali"],0),
+        _mc("hoer","Wie heißt Saras Vater?",["Ahmed","Ali","Amina"],0),
+        _mc("hoer","Wie heißt Saras Bruder?",["Ali","Ahmed","Lina"],0)
+      ]
+    },
+    reading: {
+      text: "Hallo! Ich heiße Amina und komme aus Pakistan. Ich wohne in München. Meine Familie ist groß. Meine Mutter heißt Fatima. Mein Vater heißt Ahmed. Ich habe eine Schwester und einen Bruder. Meine Schwester heißt Sara. Sie wohnt in Berlin. Mein Bruder heißt Ali. Er ist 25 Jahre alt. Meine Eltern wohnen in Pakistan. Ich vermisse meine Familie, aber wir telefonieren oft.",
+      qs: [_tf("lesen","Amina wohnt in München.",0),_tf("lesen","Aminas Schwester wohnt in Berlin.",0),_tf("lesen","Aminas Bruder ist 52 Jahre alt.",1),_tf("lesen","Aminas Eltern wohnen in München.",1)]
+    },
+    writing: "Schreibe fünf bis sieben einfache Sätze über deine Familie. Benutze: Meine Familie ist … / Meine Mutter heißt … / Mein Vater heißt … / Mein Bruder heißt … / Meine Schwester heißt … / Meine Eltern wohnen … Du kannst auch eine erfundene Familie beschreiben.",
+    speaking: {
+      task: "Du zeigst einer Freundin oder einem Freund ein Familienfoto. Beschreibe mindestens fünf Personen oder Sätze. Benutze: Das ist … / Das sind … / Er heißt … / Sie heißt … / Sie heißen …",
+      scene: "Du zeigst Lena ein Familienfoto.",
+      steps: [
+        {q:"Wer ist das auf dem Foto? Stelle eine Person vor.",re:"das ist (mein|meine) \\S+",model:"Das ist meine Mutter.",tip:"Sage: Das ist mein/meine + Person.",tag:"mein"},
+        {q:"Wie heißt deine Mutter?",re:"(sie heisst|meine mutter heisst) \\S+",model:"Sie heißt Amina.",tip:"Sage: Sie heißt … oder Meine Mutter heißt …",tag:"heissen"},
+        {q:"Und dein Vater? Wie heißt er?",re:"(er heisst|mein vater heisst) \\S+",model:"Er heißt Ahmed.",tip:"Sage: Er heißt … oder Mein Vater heißt …",tag:"heissen"}
+      ]
+    },
+    exercises: [
+      _mc("mein","Das ist ___ Mutter.",["mein","meine"],1),
+      _mc("mein","Das ist ___ Vater.",["mein","meine"],0),
+      _mc("mein","Das ist ___ Bruder.",["mein","meine"],0),
+      _mc("mein","Das ist ___ Schwester.",["mein","meine"],1),
+      _mc("mein","Das sind ___ Eltern.",["mein","meine"],1),
+      _mc("mein","Das sind ___ Geschwister.",["mein","meine"],1),
+      _mc("sind","Das ___ mein Vater.",["ist","sind"],0),
+      _mc("sind","Das ___ meine Eltern.",["ist","sind"],1),
+      _mc("sind","Das ___ meine Schwester.",["ist","sind"],0),
+      _mc("sind","Das ___ meine Geschwister.",["ist","sind"],1),
+      _mc("heissen","Meine Mutter ___ Amina.",["heißt","heißen"],0),
+      _mc("heissen","Mein Bruder ___ Ali.",["heißt","heißen"],0),
+      _mc("heissen","Meine Eltern ___ Ahmed und Fatima.",["heißt","heißen"],1),
+      _mc("heissen","Meine Schwester ___ Sara.",["heißt","heißen"],0),
+      _bd("sind","Bilde den Satz.",["Das","ist","meine","Mutter"]),
+      _bd("heissen","Bilde den Satz.",["Mein","Bruder","heißt","Ali"]),
+      _bd("sind","Bilde den Satz.",["Das","sind","meine","Eltern"]),
+      _bd("heissen","Bilde den Satz.",["Sie","heißt","Sara"]),
+      _mc("mein","Welcher Satz ist richtig?",["Das ist mein Vater.","Das ist meine Vater."],0),
+      _mc("mein","Welcher Satz ist richtig?",["Das sind meine Eltern.","Das sind mein Eltern."],0),
+      _mc("mein","Welcher Satz ist richtig?",["Meine Schwester heißt Sara.","Mein Schwester heißt Sara."],0),
+      _mc("heissen","Welcher Satz ist richtig?",["Mein Bruder heißt Ali.","Mein Bruder heißen Ali."],0),
+      _mc("heissen","Wie heißen die Eltern?",["Nadia und Imran","Bilal und Nadia","Imran und Bilal"],0,{ctx:"Omar: Seine Mutter heißt Nadia. Sein Vater heißt Imran. Sein Bruder heißt Bilal."}),
+      _mc("hoer","Hat Omar einen Bruder?",["Ja","Nein"],0,{ctx:"Omar: Seine Mutter heißt Nadia. Sein Vater heißt Imran. Sein Bruder heißt Bilal."}),
+      _mc("heissen","Wie heißt Omars Bruder?",["Bilal","Imran","Nadia"],0,{ctx:"Omar: Seine Mutter heißt Nadia. Sein Vater heißt Imran. Sein Bruder heißt Bilal."}),
+      _fr("heissen","Mutter: Anna · Vater: Paul. Schreibe einen Satz über die Mutter.","(das ist meine mutter|meine mutter heisst|sie heisst).*anna","Das ist meine Mutter. Sie heißt Anna."),
+      _fr("heissen","Mutter: Anna · Vater: Paul. Schreibe einen Satz über den Vater.","(das ist mein vater|mein vater heisst|er heisst).*paul","Das ist mein Vater. Er heißt Paul.")
+    ],
+    test: [
+      _mc("mein","Das ist ___ Tochter.",["meine","mein"],0),
+      _mc("sind","Das ___ meine Kinder.",["sind","ist"],0),
+      _mc("heissen","Meine Kinder ___ Ali und Sara.",["heißen","heißt"],0),
+      _bd("sind","Bilde den Satz.",["Das","ist","mein","Sohn"]),
+      _ty("mein","Das ist ___ Schwester. (mein / meine)","meine")
+    ],
+    review: "Nenne fünf Familienmitglieder. Sage drei Sätze mit „mein“ und drei Sätze mit „meine“. Stelle eine Person und danach mehrere Personen vor.",
+    tagInfo: {
+      mein: {name:"mein / meine",tip:"der/das → mein, die → meine, Plural → meine."},
+      sind: {name:"Das ist / Das sind",tip:"Eine Person: Das ist … Mehrere Personen: Das sind …"},
+      heissen: {name:"heißt / heißen",tip:"er/sie heißt · sie (Plural) heißen."}
+    }
+  },
+  // ---------- Wiederholung: Sich vorstellen ----------
+  {
+    id: "05", title: "Sich vorstellen (Wiederholung)", minutes: 12,
     goal: "Du kannst dich vorstellen und einfache Fragen beantworten.",
     goalEn: "You can introduce yourself and answer simple questions.",
     vocab: [
@@ -627,6 +961,11 @@ const CONTENT = {
       wortschatz: {name:"Wortschatz",tip:"Höre die Wörter noch einmal an und schreibe sie mit Artikel."}
     }
   }],
+
+  tagInfoCommon: {
+    hoer: {name:"Hören",tip:"Höre das Gespräch noch einmal. Achte auf Namen und Zahlen."},
+    lesen: {name:"Lesen",tip:"Lies den Text noch einmal langsam und suche die Antwort im Text."}
+  },
 
   examInfo: "telc Deutsch A1: written part (Lesen, Hören, Schreiben) plus an oral part (Sprechen). This app's tasks are telc-style practice, not copies. Check pass marks and the exact format on telc.de and do the official Übungstest regularly."
 };
